@@ -53,7 +53,7 @@
  * The parameters are the same than for Freeverb.
  * Also the default response of these parameters are the same than for Freeverb:
  *  - roomsize (0 to 1): control the reverb time from 0.7 to 12.5 s.
- *    This reverberation time is ofen called T60DC.
+ *    This reverberation time is often called T60DC.
  *
  *  - damp (0 to 1): controls the reverb time frequency dependency.
  *    This controls the reverb time for the frequency sample rate/2
@@ -221,7 +221,7 @@ extern fluid_revmodel_t *new_fluid_revmodel_freeverb(fluid_real_t sample_rate);
  */
 #define SCALE_WET_WIDTH 0.2f
 
-/* It is best to inject the input signal less ofen. This contributes to obtain
+/* It is best to inject the input signal less often. This contributes to obtain
 a flatter response on comb filter. So the input gain is set to 0.1 rather 1.0. */
 #define FIXED_GAIN 0.1f /* input gain */
 
@@ -251,7 +251,7 @@ a flatter response on comb filter. So the input gain is set to 0.1 rather 1.0. *
 */
 
 #define MIN_DC_REV_TIME 0.7f	/* minimum T60DC reverb time: seconds */
-#define MAX_DC_REV_TIME 12.5f	/* maximumm T60DC time in seconds */
+#define MAX_DC_REV_TIME 12.5f	/* maximum T60DC time in seconds */
 #define RANGE_REV_TIME (MAX_DC_REV_TIME - MIN_DC_REV_TIME)
 
 /* macro to compute internal reverberation time versus roomsize parameter  */
@@ -1074,7 +1074,7 @@ fluid_fdn_revmodel_update(fluid_revmodel_fdn_t *rev)
                        (1.0f + rev->width * SCALE_WET_WIDTH);
 
     /* wet1 and wet2 are used by the stereo effect controlled by the width setting
-    for producing a stereo ouptput from a monophonic reverb signal.
+    for producing a stereo output from a monophonic reverb signal.
     Please see the note above about a side effect tendency */
 
     rev->wet1 = wet * (rev->width / 2.0f + 0.5f);
@@ -1223,7 +1223,7 @@ fluid_fdn_revmodel_set(fluid_revmodel_fdn_t *rev, int set, fluid_real_t roomsize
 * @param rev the reverb.
 * @param sample_rate new sample rate value. Must be <= sample_rate_max
 * @return FLUID_OK if success, FLUID_FAILED if new sample rate is greater
-*  then the maximumum sample rate set at creation time. The reverb will
+*  then the maximum sample rate set at creation time. The reverb will
 *  continue to work but with possible lost of quality.
 *  If this is a problem, the caller should follow steps 2.1 and 2.2.
 * Reverb API.
