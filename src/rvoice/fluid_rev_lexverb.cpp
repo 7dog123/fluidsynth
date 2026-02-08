@@ -217,7 +217,7 @@ fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
     if(fluid_lexverb_setup_blocks(this, sample_rate) != FLUID_OK)
     {
         fluid_lexverb_release_blocks(this);
-        FLUID_LOG(FLUID_ERR, "Lexicon reverb: failed to allocate delay lines");
+        FLUID_LOG(FLUID_ERR, "LEXverb reverb: failed to allocate delay lines");
         return;
     }
 
@@ -335,7 +335,7 @@ int fluid_revmodel_lexverb::samplerate_change(fluid_real_t sample_rate)
     {
         fluid_lexverb_release_blocks(this);
         valid = false;
-        FLUID_LOG(FLUID_ERR, "Lexicon reverb: failed to reinitialize delay lines");
+        FLUID_LOG(FLUID_ERR, "LEXverb reverb: failed to reinitialize delay lines");
         return FLUID_FAILED;
     }
 
