@@ -729,9 +729,14 @@ new_fluid_synth(fluid_settings_t *settings)
 
     fluid_settings_getint(settings, "synth.reverb.active", &reverb_mode);
     synth->with_reverb = (reverb_mode != FLUID_REVERB_TYPE_OFF);
-    synth->reverb_type = (reverb_mode == FLUID_REVERB_TYPE_FREEVERB)
-                         ? FLUID_REVERB_TYPE_FREEVERB
-                         : FLUID_REVERB_TYPE_FDN;
+    if(reverb_mode == FLUID_REVERB_TYPE_OFF)
+    {
+        synth->reverb_type = FLUID_REVERB_TYPE_FDN;
+    }
+    else
+    {
+        synth->reverb_type = reverb_mode;
+    }
     fluid_settings_getint(settings, "synth.chorus.active", &synth->with_chorus);
     fluid_settings_getint(settings, "synth.verbose", &synth->verbose);
 

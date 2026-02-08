@@ -76,7 +76,7 @@ fluid_allpass_init(fluid_allpass *allpass)
 
     for(i = 0; i < len; i++)
     {
-        buf[i] = DC_OFFSET; /* this is not 100 % correct. */
+        buf[i] = DC_OFFSET; /* this is not 100% correct. */
     }
 }
 
@@ -148,7 +148,7 @@ fluid_comb_init(fluid_comb *comb)
 
     for(i = 0; i < len; i++)
     {
-        buf[i] = DC_OFFSET; /* This is not 100 % correct. */
+        buf[i] = DC_OFFSET; /* This is not 100% correct. */
     }
 }
 
