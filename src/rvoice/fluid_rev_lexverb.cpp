@@ -180,7 +180,7 @@ static void fluid_lexverb_process_sample(fluid_revmodel_lexverb_t *rev, float in
     ap_info *ap = rev->ap;
     dl_info *dl = rev->dl;
 
-    ap[0].in_data = input * LEX_TRIM;
+    ap[0].in_data = input * LEX_TRIM; // technically, the left input sample should be here
     ap[1].in_data = all_pass_filter(&ap[0]);
     dl[1].in_data = ap[9].out_data;
     ap[2].in_data = all_pass_filter(&ap[1]) + delay(&dl[1]) * dl[1].coef;
@@ -188,7 +188,7 @@ static void fluid_lexverb_process_sample(fluid_revmodel_lexverb_t *rev, float in
     ap[4].in_data = all_pass_filter(&ap[3]);
     *out_left = all_pass_filter(&ap[4]);
 
-    ap[5].in_data = input * LEX_TRIM;
+    ap[5].in_data = input * LEX_TRIM; // technically, the right input sample should be here
     ap[6].in_data = all_pass_filter(&ap[5]);
     dl[0].in_data = ap[4].out_data;
     ap[7].in_data = all_pass_filter(&ap[6]) + delay(&dl[0]) * dl[0].coef;
