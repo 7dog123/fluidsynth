@@ -726,15 +726,21 @@ int main(int argc, char **argv)
             break;
 
         case 'R':
-            if((optarg != NULL) && ((FLUID_STRCMP(optarg, "0") == 0) || (FLUID_STRCMP(optarg, "no") == 0)))
+            if(optarg != NULL)
             {
-                fluid_settings_setint(settings, "synth.reverb.active", FALSE);
+                if((FLUID_STRCMP(optarg, "0") == 0) || (FLUID_STRCMP(optarg, "no") == 0))
+                {
+                    fluid_settings_setint(settings, "synth.reverb.active", FLUID_REVERB_TYPE_OFF);
+                }
+                else if(FLUID_STRCMP(optarg, "2") == 0)
+                {
+                    fluid_settings_setint(settings, "synth.reverb.active", FLUID_REVERB_TYPE_FREEVERB);
+                }
+                else
+                {
+                    fluid_settings_setint(settings, "synth.reverb.active", FLUID_REVERB_TYPE_FDN);
+                }
             }
-            else
-            {
-                fluid_settings_setint(settings, "synth.reverb.active", TRUE);
-            }
-
             break;
 
         case 'r':
