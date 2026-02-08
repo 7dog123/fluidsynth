@@ -118,24 +118,17 @@ static void fluid_lexverb_clear_blocks(fluid_revmodel_lexverb_t *rev)
     rev->damp_state_right = 0.0f;
 }
 
-static int fluid_lexverb_scaled_length(int length, float srfactor)
+static int fluid_lexverb_ms_to_buf_length(float ms, fluid_real_t sample_rate)
 {
-    int scaled_length = (int)(length * srfactor);
-    if(scaled_length < 2)
-    {
-        scaled_length = 2;
-    }
-    return scaled_length;
+    return ms * (sample_rate * (1 / 1000.0f));
 }
 
 static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_t sample_rate)
 {
     int i;
-    float srfactor = (float)(sample_rate / SAMPLE_RATE);
-
     for(i = 0; i < NUM_OF_AP_SECTS; ++i)
     {
-        int length = fluid_lexverb_scaled_length(LEX_REVERB_PARMS[i].length, srfactor);
+        int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[i].length, sample_rate);
 
         rev->ap[i].length = length;
         rev->ap[i].coef = LEX_REVERB_PARMS[i].coef;
@@ -152,7 +145,7 @@ static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_
     for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
     {
         int index = NUM_OF_AP_SECTS + i;
-        int length = fluid_lexverb_scaled_length(LEX_REVERB_PARMS[index].length, srfactor);
+        int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[index].length, sample_rate);
 
         rev->dl[i].length = length;
         rev->dl[i].coef = LEX_REVERB_PARMS[index].coef;

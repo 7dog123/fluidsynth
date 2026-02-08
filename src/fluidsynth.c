@@ -736,6 +736,10 @@ int main(int argc, char **argv)
                 {
                     fluid_settings_setint(settings, "synth.reverb.active", FLUID_REVERB_TYPE_FREEVERB);
                 }
+                else if(FLUID_STRCMP(optarg, "3") == 0)
+                {
+                    fluid_settings_setint(settings, "synth.reverb.active", FLUID_REVERB_TYPE_LEXVERB);
+                }
                 else
                 {
                     fluid_settings_setint(settings, "synth.reverb.active", FLUID_REVERB_TYPE_FDN);
