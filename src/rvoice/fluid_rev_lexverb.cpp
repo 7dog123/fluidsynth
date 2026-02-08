@@ -45,6 +45,8 @@ struct fluid_revmodel_lexverb : public _fluid_revmodel_t
     fluid_real_t wet2;
     fluid_real_t width;
     bool valid;
+    float damp_state_left;
+    float damp_state_right;
 
     ap_info ap[NUM_OF_AP_SECTS];
     dl_info dl[NUM_OF_DELAY_SECTS];
@@ -111,6 +113,9 @@ static void fluid_lexverb_clear_blocks(fluid_revmodel_lexverb_t *rev)
         rev->dl[i].in_data = 0.0f;
         rev->dl[i].out_data = 0.0f;
     }
+
+    rev->damp_state_left = 0.0f;
+    rev->damp_state_right = 0.0f;
 }
 
 static int fluid_lexverb_scaled_length(int length, float srfactor)
@@ -168,7 +173,9 @@ static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_
 
 static void fluid_lexverb_update(fluid_revmodel_lexverb_t *rev)
 {
-    fluid_real_t wet = rev->level / (1.0f + rev->width * LEX_SCALE_WET_WIDTH);
+    fluid_real_t roomscale = 0.5f + 0.5f * rev->roomsize;
+    fluid_real_t wet = (rev->level * roomscale) /
+                       (1.0f + rev->width * LEX_SCALE_WET_WIDTH);
 
     rev->wet1 = wet * (rev->width / 2.0f + 0.5f);
     rev->wet2 = wet * ((1.0f - rev->width) / 2.0f);
@@ -195,6 +202,16 @@ static void fluid_lexverb_process_sample(fluid_revmodel_lexverb_t *rev, float in
     ap[8].in_data = all_pass_filter(&ap[7]);
     ap[9].in_data = all_pass_filter(&ap[8]);
     *out_right = all_pass_filter(&ap[9]);
+
+    if(rev->damp > 0.0f)
+    {
+        float damp = (float)rev->damp;
+        *out_left = *out_left * (1.0f - damp) + rev->damp_state_left * damp;
+        *out_right = *out_right * (1.0f - damp) + rev->damp_state_right * damp;
+    }
+
+    rev->damp_state_left = *out_left;
+    rev->damp_state_right = *out_right;
 }
 
 fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
@@ -204,7 +221,9 @@ fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
       wet1(0.0f),
       wet2(0.0f),
       width(0.0f),
-      valid(false)
+      valid(false),
+      damp_state_left(0.0f),
+      damp_state_right(0.0f)
 {
     if(sample_rate <= 0.0f)
     {

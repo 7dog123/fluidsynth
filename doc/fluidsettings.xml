@@ -399,7 +399,7 @@ Developers:
             <max>3</max>
             <realtime/>
             <desc>
-                Selects the reverb engine (0=off, 1=FDN, 2=freeverb, 3=LEXverb). Engine selection applies at synth creation. Note that the amount of signal sent to the reverb module depends on the "reverb send" generator defined in the SoundFont.
+                Selects the reverb engine (0=off, 1=FDN, 2=freeverb, 3=LEXverb). Engine selection applies at synth creation, and non-zero values select a specific engine (use 0 to disable reverb). Note that the amount of signal sent to the reverb module depends on the "reverb send" generator defined in the SoundFont.
             </desc>
         </setting>
         <setting>
