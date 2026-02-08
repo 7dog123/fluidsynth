@@ -169,6 +169,10 @@
 #include "fluid_rev.h"
 #include "fluid_sys.h"
 
+#include <new>
+
+extern fluid_revmodel_t *new_fluid_revmodel_freeverb(fluid_real_t sample_rate);
+
 /*----------------------------------------------------------------------------
                         Configuration macros at compiler time.
 
@@ -609,7 +613,7 @@ typedef struct _fluid_late   fluid_late;
 /*-----------------------------------------------------------------------------
  fluidsynth reverb structure
 -----------------------------------------------------------------------------*/
-struct _fluid_revmodel_t
+struct fluid_revmodel_fdn : public _fluid_revmodel_t
 {
     /* reverb parameters */
     fluid_real_t roomsize; /* acting on reverb time */
@@ -619,7 +623,27 @@ struct _fluid_revmodel_t
 
     /* fdn reverberation structure */
     fluid_late  late;
+    bool valid;
+
+    fluid_revmodel_fdn(fluid_real_t sample_rate_max, fluid_real_t sample_rate);
+    ~fluid_revmodel_fdn() override;
+
+    bool is_valid() const
+    {
+        return valid;
+    }
+
+    void processmix(const fluid_real_t *in, fluid_real_t *left_out,
+                    fluid_real_t *right_out) override;
+    void processreplace(const fluid_real_t *in, fluid_real_t *left_out,
+                        fluid_real_t *right_out) override;
+    void reset() override;
+    void set(int set, fluid_real_t roomsize, fluid_real_t damping,
+             fluid_real_t width, fluid_real_t level) override;
+    int samplerate_change(fluid_real_t sample_rate) override;
 };
+
+typedef struct fluid_revmodel_fdn fluid_revmodel_fdn_t;
 
 /*-----------------------------------------------------------------------------
  Updates Reverb time and absorbent filters coefficients from parameters:
@@ -1018,7 +1042,7 @@ static void initialize_mod_delay_lines(fluid_late *late, fluid_real_t sample_rat
  @param rev pointer on the reverb.
 */
 static void
-fluid_revmodel_init(fluid_revmodel_t *rev)
+fluid_fdn_revmodel_init(fluid_revmodel_fdn_t *rev)
 {
     int i;
 
@@ -1036,7 +1060,7 @@ fluid_revmodel_init(fluid_revmodel_t *rev)
  @param rev pointer on the reverb.
 */
 static void
-fluid_revmodel_update(fluid_revmodel_t *rev)
+fluid_fdn_revmodel_update(fluid_revmodel_fdn_t *rev)
 {
     /* Recalculate internal values after parameters change */
 
@@ -1068,38 +1092,22 @@ fluid_revmodel_update(fluid_revmodel_t *rev)
     update_rev_time_damping(&rev->late, rev->roomsize, rev->damp);
 }
 
-/*----------------------------------------------------------------------------
-                            Reverb API
------------------------------------------------------------------------------*/
-/*
-* Creates a reverb. Once created the reverb have no parameters set, so
-* fluid_revmodel_set() must be called at least one time after calling
-* new_fluid_revmodel().
-*
-* @param sample_rate_max maximum sample rate expected in Hz.
-*
-* @param sample_rate actual sample rate needed in Hz.
-* @return pointer on the new reverb or NULL if memory error.
-* Reverb API.
-*/
-fluid_revmodel_t *
-new_fluid_revmodel(fluid_real_t sample_rate_max, fluid_real_t sample_rate)
+fluid_revmodel_fdn::fluid_revmodel_fdn(fluid_real_t sample_rate_max,
+                                       fluid_real_t sample_rate)
+    : roomsize(0.0f),
+      damp(0.0f),
+      level(0.0f),
+      wet1(0.0f),
+      wet2(0.0f),
+      width(0.0f),
+      valid(false)
 {
-    fluid_revmodel_t *rev;
-
     if(sample_rate <= 0)
     {
-        return NULL;
+        return;
     }
 
-    rev = FLUID_NEW(fluid_revmodel_t);
-
-    if(rev == NULL)
-    {
-        return NULL;
-    }
-
-    FLUID_MEMSET(&rev->late, 0,  sizeof(fluid_late));
+    FLUID_MEMSET(&late, 0,  sizeof(fluid_late));
 
     /*--------------------------------------------------------------------------
       Create fdn late reverb.
@@ -1114,40 +1122,23 @@ new_fluid_revmodel(fluid_real_t sample_rate_max, fluid_real_t sample_rate)
     /*--------------------------------------------------------------------------
       Allocate the modulated delay lines
     */
-    if(create_mod_delay_lines(&rev->late, sample_rate_max) == FLUID_FAILED)
+    if(create_mod_delay_lines(&late, sample_rate_max) == FLUID_FAILED)
     {
-        delete_fluid_revmodel(rev);
-        return NULL;
+        return;
     }
 
     /*--------------------------------------------------------------------------
       Initialize the fdn reverb
     */
     /* Initialize all modulated lines. */
-    initialize_mod_delay_lines(&rev->late, sample_rate);
+    initialize_mod_delay_lines(&late, sample_rate);
 
-    return rev;
+    valid = true;
 }
 
-/*
-* free the reverb.
-* Note that while the reverb is used by calling any fluid_revmodel_processXXX()
-* function, calling delete_fluid_revmodel() isn't multi task safe because
-* delay line are freed. To deal properly with this issue follow the steps:
-*
-* 1) Stop reverb processing (i.e disable calling of any fluid_revmodel_processXXX().
-*    reverb functions.
-* 2) Delete the reverb by calling delete_fluid_revmodel().
-*
-* @param rev pointer on reverb to free.
-* Reverb API.
-*/
-void
-delete_fluid_revmodel(fluid_revmodel_t *rev)
+fluid_revmodel_fdn::~fluid_revmodel_fdn()
 {
-    fluid_return_if_fail(rev != NULL);
-    delete_fluid_rev_late(&rev->late);
-    FLUID_FREE(rev);
+    delete_fluid_rev_late(&late);
 }
 
 /*
@@ -1170,9 +1161,9 @@ delete_fluid_revmodel(fluid_revmodel_t *rev)
 *
 * Reverb API.
 */
-void
-fluid_revmodel_set(fluid_revmodel_t *rev, int set, fluid_real_t roomsize,
-                   fluid_real_t damping, fluid_real_t width, fluid_real_t level)
+static void
+fluid_fdn_revmodel_set(fluid_revmodel_fdn_t *rev, int set, fluid_real_t roomsize,
+                       fluid_real_t damping, fluid_real_t width, fluid_real_t level)
 {
     fluid_return_if_fail(rev != NULL);
 
@@ -1204,7 +1195,7 @@ fluid_revmodel_set(fluid_revmodel_t *rev, int set, fluid_real_t roomsize,
     }
 
     /* updates internal parameters */
-    fluid_revmodel_update(rev);
+    fluid_fdn_revmodel_update(rev);
 }
 
 /*
@@ -1237,8 +1228,8 @@ fluid_revmodel_set(fluid_revmodel_t *rev, int set, fluid_real_t roomsize,
 *  If this is a problem, the caller should follow steps 2.1 and 2.2.
 * Reverb API.
 */
-int
-fluid_revmodel_samplerate_change(fluid_revmodel_t *rev, fluid_real_t sample_rate)
+static int
+fluid_fdn_revmodel_samplerate_change(fluid_revmodel_fdn_t *rev, fluid_real_t sample_rate)
 {
     int status = FLUID_OK;
 
@@ -1272,12 +1263,12 @@ fluid_revmodel_samplerate_change(fluid_revmodel_t *rev, fluid_real_t sample_rate
 *
 * Reverb API.
 */
-void
-fluid_revmodel_reset(fluid_revmodel_t *rev)
+static void
+fluid_fdn_revmodel_reset(fluid_revmodel_fdn_t *rev)
 {
     fluid_return_if_fail(rev != NULL);
 
-    fluid_revmodel_init(rev);
+    fluid_fdn_revmodel_init(rev);
 }
 
 /*-----------------------------------------------------------------------------
@@ -1290,9 +1281,9 @@ fluid_revmodel_reset(fluid_revmodel_t *rev)
 * The processed reverb is replacing anything there in out.
 * Reverb API.
 -----------------------------------------------------------------------------*/
-void
-fluid_revmodel_processreplace(fluid_revmodel_t *rev, const fluid_real_t *in,
-                              fluid_real_t *left_out, fluid_real_t *right_out)
+static void
+fluid_fdn_revmodel_processreplace(fluid_revmodel_fdn_t *rev, const fluid_real_t *in,
+                                  fluid_real_t *left_out, fluid_real_t *right_out)
 {
     int i, k;
 
@@ -1413,8 +1404,8 @@ fluid_revmodel_processreplace(fluid_revmodel_t *rev, const fluid_real_t *in,
 * The processed reverb is mixed in out with samples already there in out.
 * Reverb API.
 -----------------------------------------------------------------------------*/
-void fluid_revmodel_processmix(fluid_revmodel_t *rev, const fluid_real_t *in,
-                               fluid_real_t *left_out, fluid_real_t *right_out)
+static void fluid_fdn_revmodel_processmix(fluid_revmodel_fdn_t *rev, const fluid_real_t *in,
+                                          fluid_real_t *left_out, fluid_real_t *right_out)
 {
     int i, k;
 
@@ -1520,4 +1511,112 @@ void fluid_revmodel_processmix(fluid_revmodel_t *rev, const fluid_real_t *in,
         left_out[k]  += out_left  + out_right * rev->wet2;
         right_out[k] += out_right + out_left * rev->wet2;
     }
+}
+
+void fluid_revmodel_fdn::processmix(const fluid_real_t *in, fluid_real_t *left_out,
+                                    fluid_real_t *right_out)
+{
+    fluid_fdn_revmodel_processmix(this, in, left_out, right_out);
+}
+
+void fluid_revmodel_fdn::processreplace(const fluid_real_t *in, fluid_real_t *left_out,
+                                        fluid_real_t *right_out)
+{
+    fluid_fdn_revmodel_processreplace(this, in, left_out, right_out);
+}
+
+void fluid_revmodel_fdn::reset()
+{
+    fluid_fdn_revmodel_reset(this);
+}
+
+void fluid_revmodel_fdn::set(int set, fluid_real_t roomsize, fluid_real_t damping,
+                             fluid_real_t width, fluid_real_t level)
+{
+    fluid_fdn_revmodel_set(this, set, roomsize, damping, width, level);
+}
+
+int fluid_revmodel_fdn::samplerate_change(fluid_real_t sample_rate)
+{
+    return fluid_fdn_revmodel_samplerate_change(this, sample_rate);
+}
+
+/*----------------------------------------------------------------------------
+                            Reverb API
+-----------------------------------------------------------------------------*/
+fluid_revmodel_t *
+new_fluid_revmodel(fluid_real_t sample_rate_max, fluid_real_t sample_rate,
+                   int reverb_type)
+{
+    fluid_revmodel_t *rev = NULL;
+
+    if(reverb_type == FLUID_REVERB_TYPE_FREEVERB)
+    {
+        rev = new_fluid_revmodel_freeverb(sample_rate);
+    }
+    else
+    {
+        fluid_revmodel_fdn *fdn = new(std::nothrow) fluid_revmodel_fdn(sample_rate_max,
+                                                                      sample_rate);
+        if(fdn != NULL && !fdn->is_valid())
+        {
+            delete fdn;
+            fdn = NULL;
+        }
+        rev = fdn;
+    }
+
+    return rev;
+}
+
+/*
+ * free the reverb.
+ * Note that while the reverb is used by calling any fluid_revmodel_processXXX()
+ * function, calling delete_fluid_revmodel() isn't multi task safe because
+ * delay line are freed. To deal properly with this issue follow the steps:
+ *
+ * 1) Stop reverb processing (i.e disable calling of any fluid_revmodel_processXXX().
+ *    reverb functions.
+ * 2) Delete the reverb by calling delete_fluid_revmodel().
+ *
+ * @param rev pointer on reverb to free.
+ * Reverb API.
+ */
+void
+delete_fluid_revmodel(fluid_revmodel_t *rev)
+{
+    delete rev;
+}
+
+void fluid_revmodel_processmix(fluid_revmodel_t *rev, const fluid_real_t *in,
+                               fluid_real_t *left_out, fluid_real_t *right_out)
+{
+    fluid_return_if_fail(rev != NULL);
+    rev->processmix(in, left_out, right_out);
+}
+
+void fluid_revmodel_processreplace(fluid_revmodel_t *rev, const fluid_real_t *in,
+                                   fluid_real_t *left_out, fluid_real_t *right_out)
+{
+    fluid_return_if_fail(rev != NULL);
+    rev->processreplace(in, left_out, right_out);
+}
+
+void fluid_revmodel_reset(fluid_revmodel_t *rev)
+{
+    fluid_return_if_fail(rev != NULL);
+    rev->reset();
+}
+
+void fluid_revmodel_set(fluid_revmodel_t *rev, int set, fluid_real_t roomsize,
+                        fluid_real_t damping, fluid_real_t width, fluid_real_t level)
+{
+    fluid_return_if_fail(rev != NULL);
+    rev->set(set, roomsize, damping, width, level);
+}
+
+int fluid_revmodel_samplerate_change(fluid_revmodel_t *rev, fluid_real_t sample_rate)
+{
+    fluid_return_val_if_fail(rev != NULL, FLUID_FAILED);
+    return rev->samplerate_change(sample_rate);
 }

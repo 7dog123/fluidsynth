@@ -163,8 +163,9 @@ set ( libfluidsynth_SOURCES
     rvoice/fluid_rvoice_mixer.h
     rvoice/fluid_rvoice_mixer.c
     rvoice/fluid_phase.h
-    rvoice/fluid_rev.c
+    rvoice/fluid_rev.cpp
     rvoice/fluid_rev.h
+    rvoice/fluid_rev_freeverb.cpp
     synth/fluid_chan.c
     synth/fluid_chan.h
     synth/fluid_event.c

@@ -209,7 +209,11 @@ void fluid_synth_settings(fluid_settings_t *settings)
 {
     fluid_settings_register_int(settings, "synth.verbose", 0, 0, 1, FLUID_HINT_TOGGLED);
 
-    fluid_settings_register_int(settings, "synth.reverb.active", 1, 0, 1, FLUID_HINT_TOGGLED);
+    fluid_settings_register_int(settings, "synth.reverb.active",
+                                FLUID_REVERB_TYPE_FDN,
+                                FLUID_REVERB_TYPE_OFF,
+                                FLUID_REVERB_TYPE_FREEVERB,
+                                0);
     fluid_settings_register_num(settings, "synth.reverb.room-size", FLUID_REVERB_DEFAULT_ROOMSIZE, 0.0, 1.0, 0);
     fluid_settings_register_num(settings, "synth.reverb.damp", FLUID_REVERB_DEFAULT_DAMP, 0.0, 1.0, 0);
     fluid_settings_register_num(settings, "synth.reverb.width", FLUID_REVERB_DEFAULT_WIDTH, 0.0, 100.0, 0);
@@ -684,6 +688,7 @@ new_fluid_synth(fluid_settings_t *settings)
     fluid_sfloader_t *loader;
     char *important_channels;
     int i, prio_level = 0;
+    int reverb_mode = FLUID_REVERB_TYPE_FDN;
     int with_ladspa = 0;
     int with_limiter = 0;
     double sample_rate_min, sample_rate_max;
@@ -722,7 +727,11 @@ new_fluid_synth(fluid_settings_t *settings)
 
     synth->settings = settings;
 
-    fluid_settings_getint(settings, "synth.reverb.active", &synth->with_reverb);
+    fluid_settings_getint(settings, "synth.reverb.active", &reverb_mode);
+    synth->with_reverb = (reverb_mode != FLUID_REVERB_TYPE_OFF);
+    synth->reverb_type = (reverb_mode == FLUID_REVERB_TYPE_FREEVERB)
+                         ? FLUID_REVERB_TYPE_FREEVERB
+                         : FLUID_REVERB_TYPE_FDN;
     fluid_settings_getint(settings, "synth.chorus.active", &synth->with_chorus);
     fluid_settings_getint(settings, "synth.verbose", &synth->verbose);
 
@@ -912,6 +921,7 @@ new_fluid_synth(fluid_settings_t *settings)
                           synth->polyphony, synth->audio_groups,
                           synth->effects_channels, synth->effects_groups,
                           (fluid_real_t)sample_rate_max, synth->sample_rate,
+                          synth->reverb_type,
                           synth->cores - 1, prio_level);
 
     if(synth->eventhandler == NULL)
@@ -5253,7 +5263,7 @@ static void fluid_synth_handle_reverb_chorus_int(void *data, const char *name, i
 
     if(FLUID_STRCMP(name, "synth.reverb.active") == 0)
     {
-        fluid_synth_reverb_on(synth, -1, value);
+        fluid_synth_reverb_on(synth, -1, value != FLUID_REVERB_TYPE_OFF);
     }
     else if(FLUID_STRCMP(name, "synth.chorus.active") == 0)
     {
@@ -6092,6 +6102,7 @@ fluid_synth_reverb_on(fluid_synth_t *synth, int fx_group, int on)
 {
     int ret;
 	fluid_rvoice_param_t param[MAX_EVENT_PARAMS];
+    int enabled = (on != 0);
     fluid_return_val_if_fail(synth != NULL, FLUID_FAILED);
 
     fluid_synth_api_enter(synth);
@@ -6103,17 +6114,33 @@ fluid_synth_reverb_on(fluid_synth_t *synth, int fx_group, int on)
 
     if(fx_group  < 0 )
     {
-        synth->with_reverb = (on != 0);
+        synth->with_reverb = enabled;
     }
 
     param[0].i = fx_group;
-    param[1].i = on;
+    param[1].i = enabled;
     ret = fluid_rvoice_eventhandler_push(synth->eventhandler,
                                          fluid_rvoice_mixer_reverb_enable,
                                          synth->eventhandler->mixer,
                                          param);
 
     FLUID_API_RETURN(ret);
+}
+
+/**
+ * Get active reverb engine type.
+ * @param synth FluidSynth instance
+ * @return Reverb engine type (#fluid_reverb_type)
+ */
+int
+fluid_synth_get_reverb_type(fluid_synth_t *synth)
+{
+    int type;
+    fluid_return_val_if_fail(synth != NULL, FLUID_FAILED);
+    fluid_synth_api_enter(synth);
+
+    type = synth->reverb_type;
+    FLUID_API_RETURN(type);
 }
 
 /**

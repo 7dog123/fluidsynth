@@ -19,6 +19,8 @@ int main(void)
     TEST_SUCCESS(fluid_settings_setnum(settings, "synth.reverb.damp", 0.2));
     TEST_SUCCESS(fluid_settings_setnum(settings, "synth.reverb.width", 0.3));
     TEST_SUCCESS(fluid_settings_setnum(settings, "synth.reverb.level", 0.4));
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active",
+                                       FLUID_REVERB_TYPE_FREEVERB));
 
     /* set values for all chorus group */
     TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.nr", 99));
@@ -28,6 +30,9 @@ int main(void)
 
     synth = new_fluid_synth(settings);
     TEST_ASSERT(synth != NULL);
+    TEST_ASSERT(fluid_synth_get_reverb_type(synth) == FLUID_REVERB_TYPE_FREEVERB);
+    TEST_SUCCESS(fluid_synth_reverb_on(synth, -1, 0));
+    TEST_ASSERT(fluid_synth_get_reverb_type(synth) == FLUID_REVERB_TYPE_FREEVERB);
 
     /*
        check that the synth is initialized with the correct values (for all reverb group)
