@@ -166,6 +166,9 @@ set ( libfluidsynth_SOURCES
     rvoice/fluid_rev.cpp
     rvoice/fluid_rev.h
     rvoice/fluid_rev_freeverb.cpp
+    rvoice/fluid_rev_lexverb.cpp
+    rvoice/fluid_rev_lexverb.h
+    rvoice/fluid_rev_filters.h
     synth/fluid_chan.c
     synth/fluid_chan.h
     synth/fluid_event.c

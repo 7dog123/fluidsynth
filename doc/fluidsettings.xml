@@ -393,11 +393,13 @@ Developers:
         </setting>
         <setting>
             <name>reverb.active</name>
-            <type>bool</type>
-            <def>1 (TRUE)</def>
+            <type>int</type>
+            <def>1 (FDN)</def>
+            <min>0</min>
+            <max>3</max>
             <realtime/>
             <desc>
-                When set to 1 (TRUE) the reverb effects module is activated. Otherwise, no reverb will be added to the output signal. Note that the amount of signal sent to the reverb module depends on the "reverb send" generator defined in the SoundFont.
+                Selects the reverb engine (0=off, 1=FDN, 2=freeverb, 3=LEXverb). Engine selection applies at synth creation. Note that the amount of signal sent to the reverb module depends on the "reverb send" generator defined in the SoundFont.
             </desc>
         </setting>
         <setting>
@@ -956,4 +958,3 @@ Developers:
         </setting>
     </shell>
 </fluidsettings>
-

@@ -196,5 +196,15 @@ int main(void)
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
 
+    settings = new_fluid_settings();
+    TEST_ASSERT(settings != NULL);
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active",
+                                       FLUID_REVERB_TYPE_LEXVERB));
+    synth = new_fluid_synth(settings);
+    TEST_ASSERT(synth != NULL);
+    TEST_ASSERT(fluid_synth_get_reverb_type(synth) == FLUID_REVERB_TYPE_LEXVERB);
+    delete_fluid_synth(synth);
+    delete_fluid_settings(settings);
+
     return EXIT_SUCCESS;
 }

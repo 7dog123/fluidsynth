@@ -172,6 +172,7 @@
 #include <new>
 
 extern fluid_revmodel_t *new_fluid_revmodel_freeverb(fluid_real_t sample_rate);
+extern fluid_revmodel_t *new_fluid_revmodel_lexverb(fluid_real_t sample_rate);
 
 /*----------------------------------------------------------------------------
                         Configuration macros at compiler time.
@@ -1553,6 +1554,10 @@ new_fluid_revmodel(fluid_real_t sample_rate_max, fluid_real_t sample_rate,
     if(reverb_type == FLUID_REVERB_TYPE_FREEVERB)
     {
         rev = new_fluid_revmodel_freeverb(sample_rate);
+    }
+    else if(reverb_type == FLUID_REVERB_TYPE_LEXVERB)
+    {
+        rev = new_fluid_revmodel_lexverb(sample_rate);
     }
     else
     {

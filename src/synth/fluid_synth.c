@@ -212,7 +212,7 @@ void fluid_synth_settings(fluid_settings_t *settings)
     fluid_settings_register_int(settings, "synth.reverb.active",
                                 FLUID_REVERB_TYPE_FDN,
                                 FLUID_REVERB_TYPE_OFF,
-                                FLUID_REVERB_TYPE_FREEVERB,
+                                FLUID_REVERB_TYPE_LEXVERB,
                                 0);
     fluid_settings_register_num(settings, "synth.reverb.room-size", FLUID_REVERB_DEFAULT_ROOMSIZE, 0.0, 1.0, 0);
     fluid_settings_register_num(settings, "synth.reverb.damp", FLUID_REVERB_DEFAULT_DAMP, 0.0, 1.0, 0);
