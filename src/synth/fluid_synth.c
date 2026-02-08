@@ -5269,6 +5269,7 @@ static void fluid_synth_handle_reverb_chorus_int(void *data, const char *name, i
 
     if(FLUID_STRCMP(name, "synth.reverb.active") == 0)
     {
+        /* Reverb engine is fixed at synth creation; toggle on/off only. */
         fluid_synth_reverb_on(synth, -1, value != FLUID_REVERB_TYPE_OFF);
     }
     else if(FLUID_STRCMP(name, "synth.chorus.active") == 0)
