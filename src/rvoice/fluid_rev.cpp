@@ -558,7 +558,7 @@ static FLUID_INLINE fluid_real_t get_mod_delay(mod_delay_line *mdl)
             mdl->dl.line_out   = int_out_index + mdl->dl.size;
         }
 
-        /* extracts fractionnal part. (it will be used when interpolating
+        /* extracts fractional part. (it will be used when interpolating
           between line_out and line_out +1) and memorize it.
           Memorizing is necessary for modulation rate above 1 */
         mdl->frac_pos_mod = out_index - int_out_index;
@@ -843,14 +843,14 @@ static const int nom_delay_length[NBR_DELAYS] =
    sample rate <= 44100.
 
    For sample rate > 44100, length_factor is multiplied by
-   sample_rate / 44100. This ensures that the default modal density keeps inchanged.
+   sample_rate / 44100. This ensures that the default modal density keeps unchanged.
    (Without this compensation, the default modal density would be diminished for
    new sample rate change above 44100Hz).
 
  2)Modulated delay line contributes to diminish resonnant frequencies (often called "ringing").
    Modulation depth (mod_depth) is set to nominal value of MOD_DEPTH at sample rate 44100Hz.
    For sample rate > 44100, mod_depth is multiplied by sample_rate / 44100. This ensures
-   that the effect of modulated delay line remains inchanged.
+   that the effect of modulated delay line remains unchanged.
 */
 static void compensate_from_sample_rate(fluid_real_t sample_rate,
                                         fluid_real_t *mod_depth,
@@ -1238,7 +1238,7 @@ fluid_fdn_revmodel_samplerate_change(fluid_revmodel_fdn_t *rev, fluid_real_t sam
     if(sample_rate > rev->late.sample_rate_max)
     {
         FLUID_LOG(FLUID_WARN,
-                  "fdn reverb: sample rate %.0f Hz is deduced to %.0f Hz\n",
+                  "fdn reverb: sample rate %.0f Hz is reduced to %.0f Hz\n",
                    sample_rate, rev->late.sample_rate_max);
 
         /* Reduce sample rate to the maximum value set at creation time.

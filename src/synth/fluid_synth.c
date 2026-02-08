@@ -731,6 +731,7 @@ new_fluid_synth(fluid_settings_t *settings)
     synth->with_reverb = (reverb_mode != FLUID_REVERB_TYPE_OFF);
     if(reverb_mode == FLUID_REVERB_TYPE_OFF)
     {
+        /* Default to FDN when disabled so enabling later uses a defined engine. */
         synth->reverb_type = FLUID_REVERB_TYPE_FDN;
     }
     else
