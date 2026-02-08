@@ -329,6 +329,7 @@ void fluid_revmodel_lexverb::set(int set, fluid_real_t roomsize, fluid_real_t da
 
     if(set & FLUID_REVMODEL_SET_WIDTH)
     {
+        fluid_clip(width, 0.0f, 100.0f);
         this->width = width;
     }
 
