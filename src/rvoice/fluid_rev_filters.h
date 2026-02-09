@@ -342,6 +342,12 @@ public:
         return coefficient;
     }
 
+    /** Set the cached output value. */
+    void set_last_output(SampleType value)
+    {
+        last_output = value;
+    }
+
     /** Return the most recently produced output sample. */
     SampleType get_last_output() const
     {

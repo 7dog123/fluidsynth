@@ -103,7 +103,7 @@ static void fluid_lexverb_clear_blocks(fluid_revmodel_lexverb_t *rev)
             rev->dl[i].fill_buffer(0.0f);
             rev->dl[i].set_positions(1, 1);
         }
-        rev->dl[i].last_output = 0.0f;
+        rev->dl[i].set_last_output(0.0f);
     }
 
     rev->damp_state_left = 0.0f;
@@ -143,7 +143,7 @@ static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_
             return FLUID_FAILED;
         }
         rev->dl[i].set_positions(1, 1);
-        rev->dl[i].last_output = 0.0f;
+        rev->dl[i].set_last_output(0.0f);
     }
 
     fluid_lexverb_clear_blocks(rev);
