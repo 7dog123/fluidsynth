@@ -90,6 +90,44 @@ public:
         line_out = out_pos;
     }
 
+    /** Set both read and write indices to the same position for single-tap use. */
+    void set_single_tap_position(int index)
+    {
+        line_in = index;
+        line_out = index;
+    }
+
+    /** Read the current sample at the output position (caller ensures valid index). */
+    SampleType read() const
+    {
+        return line[line_out];
+    }
+
+    /** Write a sample at the output position (caller ensures valid index). */
+    void write(SampleType value)
+    {
+        line[line_out] = value;
+    }
+
+    /** Advance the output position by one sample with wraparound. */
+    void advance()
+    {
+        if(++line_out >= size)
+        {
+            line_out = 0;
+        }
+    }
+
+    /**
+     * Advance and keep read/write indices aligned for single-tap filters where
+     * the read and write positions must remain identical.
+     */
+    void advance_single_tap()
+    {
+        advance();
+        line_in = line_out;
+    }
+
     /** Set the coefficient used by lexverb delay mixing. */
     void set_coefficient(SampleType value)
     {
@@ -147,7 +185,10 @@ public:
     int size;
     /** Write index into the delay buffer. */
     int line_in;
-    /** Read index into the delay buffer. */
+    /**
+     * Index into the delay buffer used for reading; single-tap operations also
+     * write at this index, while multi-tap delays may keep line_in separate.
+     */
     int line_out;
     /** Optional damping low-pass filter state. */
     DampingType damping;
@@ -214,7 +255,8 @@ public:
     /** Set the current delay buffer index (used when resetting state). */
     void set_index(int index)
     {
-        delay.set_positions(index, index);
+        /* Keep read/write indices aligned for the shared delay buffer. */
+        delay.set_single_tap_position(index);
     }
 
     /** Set the cached output value (used for lexverb cross-feedback). */
@@ -243,27 +285,22 @@ public:
      */
     SampleType process(SampleType input)
     {
-        SampleType bufout = delay.line[delay.line_out];
+        SampleType bufout = delay.read();
         SampleType output;
 
         if(mode == FLUID_REVERB_ALLPASS_FREEVERB)
         {
             output = bufout - input;
-            delay.line[delay.line_out] = input + (bufout * feedback);
+            delay.write(input + (bufout * feedback));
         }
         else
         {
             SampleType delay_in = input + (bufout * feedback);
             output = bufout - (delay_in * feedback);
-            delay.line[delay.line_out] = delay_in;
+            delay.write(delay_in);
         }
 
-        if(++delay.line_out >= delay.size)
-        {
-            delay.line_out = 0;
-        }
-
-        delay.line_in = delay.line_out;
+        delay.advance_single_tap();
         last_output = output;
         return output;
     }
@@ -293,10 +330,12 @@ public:
     /** Allocate the delay buffer with the given length. */
     bool set_buffer(int size)
     {
+        if(!delay.set_buffer(size))
+        {
+            return false;
+        }
         filterstore = 0;
-        delay.line_in = 0;
-        delay.line_out = 0;
-        return delay.set_buffer(size);
+        return true;
     }
 
     /** Release the delay buffer and reset state. */
@@ -350,16 +389,10 @@ public:
      */
     SampleType process(SampleType input)
     {
-        SampleType output = delay.line[delay.line_out];
+        SampleType output = delay.read();
         filterstore = (output * damp2) + (filterstore * damp1);
-        delay.line[delay.line_out] = input + (filterstore * feedback);
-
-        if(++delay.line_out >= delay.size)
-        {
-            delay.line_out = 0;
-        }
-
-        delay.line_in = delay.line_out;
+        delay.write(input + (filterstore * feedback));
+        delay.advance_single_tap();
         return output;
     }
 
