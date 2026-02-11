@@ -26,25 +26,25 @@ enum fluid_reverb_allpass_mode
 /**
  * @brief Damping low-pass filter state for delay lines.
  *
- * @tparam SampleType Floating point sample type (float or double).
+ * @tparam sample_t Floating point sample type (float or double).
  */
-template<typename SampleType>
+template<typename sample_t>
 struct fluid_reverb_delay_damping
 {
     /** Filter history value. */
-    SampleType buffer;
+    sample_t buffer;
     /** Feed-forward coefficient. */
-    SampleType b0;
+    sample_t b0;
     /** Feedback coefficient. */
-    SampleType a1;
+    sample_t a1;
 };
 
 /**
  * @brief Delay line used by reverb algorithms.
  *
- * @tparam SampleType Floating point sample type (float or double).
+ * @tparam sample_t Floating point sample type (float or double).
  */
-template<typename SampleType, typename DampingType = fluid_reverb_delay_damping<SampleType> >
+template<typename sample_t, typename DampingType = fluid_reverb_delay_damping<sample_t> >
 class fluid_reverb_delay_line
 {
 public:
@@ -69,14 +69,14 @@ public:
             last_output = 0;
             throw std::invalid_argument("Delay buffer length must be positive");
         }
-        line.resize(static_cast<size_t>(length), SampleType());
+        line.resize(static_cast<size_t>(length), sample_t());
         line_in = 0;
         line_out = 0;
         last_output = 0;
     }
 
     /** Fill the delay buffer without changing indices. */
-    void fill_buffer(SampleType value)
+    void fill_buffer(sample_t value)
     {
         for(int i = 0; i < size(); ++i)
         {
@@ -99,13 +99,13 @@ public:
     }
 
     /** Read the current sample at the output position (caller ensures valid index). */
-    SampleType read() const
+    sample_t read() const
     {
         return line[line_out];
     }
 
     /** Write a sample at the output position (caller ensures valid index). */
-    void write(SampleType value)
+    void write(sample_t value)
     {
         line[line_out] = value;
     }
@@ -130,25 +130,25 @@ public:
     }
 
     /** Set the coefficient used by lexverb delay mixing. */
-    void set_coefficient(SampleType value)
+    void set_coefficient(sample_t value)
     {
         coefficient = value;
     }
 
     /** Return the coefficient used by lexverb delay mixing. */
-    SampleType get_coefficient() const
+    sample_t get_coefficient() const
     {
         return coefficient;
     }
 
     /** Set the cached output value. */
-    void set_last_output(SampleType value)
+    void set_last_output(sample_t value)
     {
         last_output = value;
     }
 
     /** Return the most recently produced output sample. */
-    SampleType get_last_output() const
+    sample_t get_last_output() const
     {
         return last_output;
     }
@@ -170,9 +170,9 @@ public:
      * @param input Input sample.
      * @return Delayed output sample.
      */
-    SampleType process(SampleType input)
+    sample_t process(sample_t input)
     {
-        SampleType output = line[line_out];
+        sample_t output = line[line_out];
         line[line_out] = input;
 
         if(++line_out >= size())
@@ -186,7 +186,7 @@ public:
     }
 
     /** Delay buffer storage. */
-    std::vector<SampleType> line;
+    std::vector<sample_t> line;
     /** Write index into the delay buffer. */
     int line_in;
     /**
@@ -197,9 +197,9 @@ public:
     /** Optional damping low-pass filter state. */
     DampingType damping;
     /** Optional coefficient for lexverb cross-feed. */
-    SampleType coefficient;
+    sample_t coefficient;
     /** Last output sample produced by process(). */
-    SampleType last_output;
+    sample_t last_output;
 };
 
 /**
@@ -208,9 +208,9 @@ public:
  * Reuses the shared fluid_reverb_delay_line storage to avoid duplicating delay
  * buffer bookkeeping across filter types.
  *
- * @tparam SampleType Floating point sample type (float or double).
+ * @tparam sample_t Floating point sample type (float or double).
  */
-template<typename SampleType>
+template<typename sample_t>
 class fluid_reverb_allpass
 {
 public:
@@ -221,13 +221,13 @@ public:
     }
 
     /** Set the feedback coefficient controlling the allpass response. */
-    void set_feedback(SampleType value)
+    void set_feedback(sample_t value)
     {
         feedback = value;
     }
 
     /** Get the feedback coefficient. */
-    SampleType get_feedback() const
+    sample_t get_feedback() const
     {
         return feedback;
     }
@@ -240,7 +240,7 @@ public:
     }
 
     /** Fill the delay buffer without changing the current index. */
-    void fill_buffer(SampleType value)
+    void fill_buffer(sample_t value)
     {
         delay.fill_buffer(value);
     }
@@ -253,13 +253,13 @@ public:
     }
 
     /** Set the cached output value (used for lexverb cross-feedback). */
-    void set_last_output(SampleType value)
+    void set_last_output(sample_t value)
     {
         last_output = value;
     }
 
     /** Return the most recently produced output sample. */
-    SampleType get_last_output() const
+    sample_t get_last_output() const
     {
         return last_output;
     }
@@ -276,10 +276,10 @@ public:
      * @param input Input sample.
      * @return Filtered output sample.
      */
-    SampleType process(SampleType input)
+    sample_t process(sample_t input)
     {
-        SampleType bufout = delay.read();
-        SampleType output;
+        sample_t bufout = delay.read();
+        sample_t output;
 
         if(mode == FLUID_REVERB_ALLPASS_FREEVERB)
         {
@@ -288,7 +288,7 @@ public:
         }
         else
         {
-            SampleType delay_in = input + (bufout * feedback);
+            sample_t delay_in = input + (bufout * feedback);
             output = bufout - (delay_in * feedback);
             delay.write(delay_in);
         }
@@ -301,11 +301,11 @@ public:
     /** Algorithm variant selector. */
     fluid_reverb_allpass_mode mode;
     /** Feedback coefficient (g) for the allpass filter. */
-    SampleType feedback;
+    sample_t feedback;
     /** Shared delay buffer storage for the filter. */
-    fluid_reverb_delay_line<SampleType> delay;
+    fluid_reverb_delay_line<sample_t> delay;
     /** Last output sample produced by process(). */
-    SampleType last_output;
+    sample_t last_output;
 };
 
 /**
@@ -314,9 +314,9 @@ public:
  * Reuses the shared fluid_reverb_delay_line storage to avoid duplicating delay
  * buffer bookkeeping across filter types.
  *
- * @tparam SampleType Floating point sample type (float or double).
+ * @tparam sample_t Floating point sample type (float or double).
  */
-template<typename SampleType>
+template<typename sample_t>
 class fluid_reverb_comb
 {
 public:
@@ -328,32 +328,32 @@ public:
     }
 
     /** Fill the delay buffer without changing the current index. */
-    void fill_buffer(SampleType value)
+    void fill_buffer(sample_t value)
     {
         delay.fill_buffer(value);
     }
 
     /** Set the damping value (0..1) which controls the comb low pass. */
-    void set_damp(SampleType value)
+    void set_damp(sample_t value)
     {
         damp1 = value;
-        damp2 = (SampleType)1 - value;
+        damp2 = (sample_t)1 - value;
     }
 
     /** Return the current damping value. */
-    SampleType get_damp() const
+    sample_t get_damp() const
     {
         return damp1;
     }
 
     /** Set the feedback coefficient for the comb filter. */
-    void set_feedback(SampleType value)
+    void set_feedback(sample_t value)
     {
         feedback = value;
     }
 
     /** Return the feedback coefficient. */
-    SampleType get_feedback() const
+    sample_t get_feedback() const
     {
         return feedback;
     }
@@ -370,9 +370,9 @@ public:
      * @param input Input sample.
      * @return Filtered output sample.
      */
-    SampleType process(SampleType input)
+    sample_t process(sample_t input)
     {
-        SampleType output = delay.read();
+        sample_t output = delay.read();
         filterstore = (output * damp2) + (filterstore * damp1);
         delay.write(input + (filterstore * feedback));
         delay.advance_single_tap();
@@ -380,15 +380,15 @@ public:
     }
 
     /** Feedback coefficient (roomsize-dependent). */
-    SampleType feedback;
+    sample_t feedback;
     /** Internal low-pass filter storage. */
-    SampleType filterstore;
+    sample_t filterstore;
     /** Damping coefficient (damp1) for the low-pass filter. */
-    SampleType damp1;
+    sample_t damp1;
     /** Complementary damping coefficient (damp2). */
-    SampleType damp2;
+    sample_t damp2;
     /** Shared delay buffer storage for the filter. */
-    fluid_reverb_delay_line<SampleType> delay;
+    fluid_reverb_delay_line<sample_t> delay;
 };
 
 #endif
