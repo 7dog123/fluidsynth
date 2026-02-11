@@ -109,10 +109,7 @@ static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_
 
         rev->ap[i].set_mode(FLUID_REVERB_ALLPASS_SCHROEDER);
         rev->ap[i].set_feedback(LEX_REVERB_PARMS[i].coef);
-        if(!rev->ap[i].set_buffer(length))
-        {
-            return FLUID_FAILED;
-        }
+        rev->ap[i].set_buffer(length);
         rev->ap[i].set_index(1);
         rev->ap[i].set_last_output(0.0f);
     }
@@ -123,10 +120,7 @@ static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_
         int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[index].length, sample_rate);
 
         rev->dl[i].set_coefficient(LEX_REVERB_PARMS[index].coef);
-        if(!rev->dl[i].set_buffer(length))
-        {
-            return FLUID_FAILED;
-        }
+        rev->dl[i].set_buffer(length);
         rev->dl[i].set_positions(1, 1);
         rev->dl[i].set_last_output(0.0f);
     }

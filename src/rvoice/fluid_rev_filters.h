@@ -11,9 +11,8 @@
 #ifndef FLUID_REV_FILTERS_H
 #define FLUID_REV_FILTERS_H
 
-#include "fluid_sys.h"
-
 #include <vector>
+#include <stdexcept>
 
 /** Algorithm variant used by the allpass filter. */
 enum fluid_reverb_allpass_mode
@@ -51,7 +50,6 @@ class fluid_reverb_delay_line
 public:
     fluid_reverb_delay_line()
         : line(),
-          size(0),
           line_in(0),
           line_out(0),
           damping(),
@@ -61,29 +59,26 @@ public:
     }
 
     /** Allocate the delay buffer with the given length. */
-    bool set_buffer(int length)
+    void set_buffer(int length)
     {
         if(length <= 0)
         {
             line.clear();
-            size = 0;
             line_in = 0;
             line_out = 0;
             last_output = 0;
-            return false;
+            throw std::invalid_argument("Delay buffer length must be positive");
         }
         line.resize(static_cast<size_t>(length), SampleType());
-        size = length;
         line_in = 0;
         line_out = 0;
         last_output = 0;
-        return true;
     }
 
     /** Fill the delay buffer without changing indices. */
     void fill_buffer(SampleType value)
     {
-        for(int i = 0; i < size; ++i)
+        for(int i = 0; i < size(); ++i)
         {
             line[i] = value;
         }
@@ -118,7 +113,7 @@ public:
     /** Advance the output position by one sample with wraparound. */
     void advance()
     {
-        if(++line_out >= size)
+        if(++line_out >= size())
         {
             line_out = 0;
         }
@@ -161,7 +156,12 @@ public:
     /** Check if a buffer has been allocated. */
     bool has_buffer() const
     {
-        return size > 0;
+        return !this->line.empty();
+    }
+
+    int size() const
+    {
+        return static_cast<int>(this->line.size());
     }
 
     /**
@@ -175,7 +175,7 @@ public:
         SampleType output = line[line_out];
         line[line_out] = input;
 
-        if(++line_out >= size)
+        if(++line_out >= size())
         {
             line_out = 0;
         }
@@ -187,8 +187,6 @@ public:
 
     /** Delay buffer storage. */
     std::vector<SampleType> line;
-    /** Length of the delay buffer in samples. */
-    int size;
     /** Write index into the delay buffer. */
     int line_in;
     /**
@@ -235,14 +233,10 @@ public:
     }
 
     /** Allocate the delay buffer with the given length. */
-    bool set_buffer(int size)
+    void set_buffer(int size)
     {
-        if(!delay.set_buffer(size))
-        {
-            return false;
-        }
+        delay.set_buffer(size);
         last_output = 0;
-        return true;
     }
 
     /** Fill the delay buffer without changing the current index. */
@@ -327,14 +321,10 @@ class fluid_reverb_comb
 {
 public:
     /** Allocate the delay buffer with the given length. */
-    bool set_buffer(int size)
+    void set_buffer(int size)
     {
-        if(!delay.set_buffer(size))
-        {
-            return false;
-        }
+        delay.set_buffer(size);
         filterstore = 0;
-        return true;
     }
 
     /** Fill the delay buffer without changing the current index. */

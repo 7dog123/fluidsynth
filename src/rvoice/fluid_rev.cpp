@@ -379,7 +379,7 @@ static void clear_delay_line(delay_line *dl)
 {
     int i;
 
-    for(i = 0; i < dl->size; i++)
+    for(i = 0; i < dl->size(); i++)
     {
         dl->line[i] = DC_OFFSET;
     }
@@ -392,7 +392,7 @@ static void clear_delay_line(delay_line *dl)
 {\
     dl->line[dl->line_in] = val;\
     /* Incrementation and circular motion if necessary */\
-    if(++dl->line_in >= dl->size) dl->line_in -= dl->size;\
+    if(++dl->line_in >= dl->size()) dl->line_in -= dl->size();\
 }\
 
 /*-----------------------------------------------------------------------------
@@ -501,7 +501,7 @@ typedef struct
 -----------------------------------------------------------------------------*/
 static int get_mod_delay_line_length(mod_delay_line *mdl)
 {
-    return (mdl->dl.size - mdl->mod_depth - INTERP_SAMPLES_NBR);
+    return (mdl->dl.size() - mdl->mod_depth - INTERP_SAMPLES_NBR);
 }
 
 /*-----------------------------------------------------------------------------
@@ -535,9 +535,9 @@ static FLUID_INLINE fluid_real_t get_mod_delay(mod_delay_line *mdl)
 
             /* forces read index (line_out)  with integer modulation value  */
             /* Boundary check and circular motion as needed */
-            if((mdl->dl.line_out = int_out_index) >= mdl->dl.size)
+            if((mdl->dl.line_out = int_out_index) >= mdl->dl.size())
             {
-                mdl->dl.line_out -= mdl->dl.size;
+                mdl->dl.line_out -= mdl->dl.size();
             }
         }
         else /* negative */
@@ -545,7 +545,7 @@ static FLUID_INLINE fluid_real_t get_mod_delay(mod_delay_line *mdl)
             int_out_index = (int)(out_index - 1); /* previous integer part */
             /* forces read index (line_out) with integer modulation value  */
             /* circular motion as needed */
-            mdl->dl.line_out   = int_out_index + mdl->dl.size;
+            mdl->dl.line_out   = int_out_index + mdl->dl.size();
         }
 
         /* extracts fractional part. (it will be used when interpolating
@@ -555,9 +555,9 @@ static FLUID_INLINE fluid_real_t get_mod_delay(mod_delay_line *mdl)
 
         /* updates center position (center_pos_mod) to the next position
            specified by modulation rate */
-        if((mdl->center_pos_mod += mdl->mod_rate) >= mdl->dl.size)
+        if((mdl->center_pos_mod += mdl->mod_rate) >= mdl->dl.size())
         {
-            mdl->center_pos_mod -= mdl->dl.size;
+            mdl->center_pos_mod -= mdl->dl.size();
         }
     }
 
@@ -568,9 +568,9 @@ static FLUID_INLINE fluid_real_t get_mod_delay(mod_delay_line *mdl)
 
     /* updates line_out to the next sample.
        Boundary check and circular motion as needed */
-    if(++mdl->dl.line_out >= mdl->dl.size)
+    if(++mdl->dl.line_out >= mdl->dl.size())
     {
-        mdl->dl.line_out -= mdl->dl.size;
+        mdl->dl.line_out -= mdl->dl.size();
     }
 
     /* Fractional interpolation between next sample (at next position) and
@@ -897,10 +897,7 @@ static int create_mod_delay_lines(fluid_late *late,
 
         /* real size of the line in use (in samples):
         size = INTERP_SAMPLES_NBR + mod_depth + delay_length */
-        if(!mdl->dl.set_buffer(delay_length + static_cast<int>(mod_depth) + INTERP_SAMPLES_NBR))
-        {
-            return FLUID_FAILED;
-        }
+        mdl->dl.set_buffer(delay_length + static_cast<int>(mod_depth) + INTERP_SAMPLES_NBR);
     }
     return FLUID_OK;
 }
@@ -969,7 +966,7 @@ static void initialize_mod_delay_lines(fluid_late *late, fluid_real_t sample_rat
            For example with a value of 2, the center position position will be
            updated only one time every 2 samples only.
         */
-        if(MOD_RATE < 1 || MOD_RATE > mdl->dl.size)
+        if(MOD_RATE < 1 || MOD_RATE > mdl->dl.size())
         {
             FLUID_LOG(FLUID_INFO, "fdn reverb: modulation rate is out of range");
             mdl->mod_rate = 1; /* default modulation rate: every one sample */
