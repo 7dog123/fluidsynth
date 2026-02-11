@@ -21,7 +21,7 @@
  * We have a recursive filter. The output decays exponentially, if the input
  * stops. So the numbers get smaller and smaller... At some point, they reach
  * 'denormal' level. On some platforms this will lead to drastic spikes in the
- * CPU load. This is especially noticable on some older Pentium (especially
+ * CPU load. This is especially noticeable on some older Pentium (especially
  * Pentium 3) processors, but even more modern Intel Core processors still show
  * reduced performance with denormals. While there are compile-time switches to
  * treat denormals as zero for a lot of processors, those are not available or
@@ -38,8 +38,8 @@
 #define	fixedgain 0.015f
 /* scale_wet_width is a compensation weight factor to get an output
    amplitude (wet) rather independent of the width setting.
-    0: the output amplitude is fully dependant on the width setting.
-   >0: the output amplitude is less dependant on the width setting.
+    0: the output amplitude is fully dependent on the width setting.
+   >0: the output amplitude is less dependent on the width setting.
    With a scale_wet_width of 0.2 the output amplitude is rather
    independent of width setting (see fluid_revmodel_update()).
  */
@@ -272,8 +272,8 @@ fluid_freeverb_revmodel_update(fluid_revmodel_freeverb_t *rev)
     fluid_real_t wet = (rev->level * scalewet) /
                        (1.0f + rev->width * scale_wet_width);
 
-    /* wet1 and wet2 are used by the stereo effect controled by the width setting
-    for producing a stereo ouptput from a monophonic reverb signal.
+    /* wet1 and wet2 are used by the stereo effect controlled by the width setting
+    for producing a stereo output from a monophonic reverb signal.
     Please see the note above about a side effect tendency */
     rev->wet1 = wet * (rev->width / 2.0f + 0.5f);
     rev->wet2 = wet * ((1.0f - rev->width) / 2.0f);
