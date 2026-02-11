@@ -169,6 +169,8 @@
 #include "fluid_rev.h"
 #include "fluid_sys.h"
 #include "fluid_rev_filters.h"
+#include "fluid_rev_freeverb.h"
+#include "fluid_rev_lexverb.h"
 
 #include <exception>
 #include <new>
