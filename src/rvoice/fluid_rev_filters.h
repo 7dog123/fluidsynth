@@ -44,7 +44,7 @@ struct fluid_reverb_delay_damping
  *
  * @tparam sample_t Floating point sample type (float or double).
  */
-template<typename sample_t, typename DampingType = fluid_reverb_delay_damping<sample_t> >
+template<typename sample_t, typename damping_t = fluid_reverb_delay_damping<sample_t> >
 class fluid_reverb_delay_line
 {
 public:
@@ -195,7 +195,7 @@ public:
      */
     int line_out;
     /** Optional damping low-pass filter state. */
-    DampingType damping;
+    damping_t damping;
     /** Optional coefficient for lexverb cross-feed. */
     sample_t coefficient;
     /** Last output sample produced by process(). */
