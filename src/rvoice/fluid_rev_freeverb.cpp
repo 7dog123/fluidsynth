@@ -149,19 +149,6 @@ fluid_revmodel_freeverb::fluid_revmodel_freeverb(fluid_real_t sample_rate)
 
 fluid_revmodel_freeverb::~fluid_revmodel_freeverb()
 {
-    int i;
-
-    for(i = 0; i < numcombs; i++)
-    {
-        combL[i].release();
-        combR[i].release();
-    }
-
-    for(i = 0; i < numallpasses; i++)
-    {
-        allpassL[i].release();
-        allpassR[i].release();
-    }
 }
 
 static void
@@ -394,20 +381,6 @@ static int
 fluid_freeverb_revmodel_samplerate_change(fluid_revmodel_freeverb_t *rev,
                                           fluid_real_t sample_rate)
 {
-    int i;
-
-    for(i = 0; i < numcombs; i++)
-    {
-        rev->combL[i].release();
-        rev->combR[i].release();
-    }
-
-    for(i = 0; i < numallpasses; i++)
-    {
-        rev->allpassL[i].release();
-        rev->allpassR[i].release();
-    }
-
     fluid_freeverb_set_revmodel_buffers(rev, sample_rate);
 
     return FLUID_OK;

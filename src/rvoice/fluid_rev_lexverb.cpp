@@ -67,21 +67,6 @@ struct fluid_revmodel_lexverb : public _fluid_revmodel_t
 
 typedef struct fluid_revmodel_lexverb fluid_revmodel_lexverb_t;
 
-static void fluid_lexverb_release_blocks(fluid_revmodel_lexverb_t *rev)
-{
-    int i;
-
-    for(i = 0; i < NUM_OF_AP_SECTS; ++i)
-    {
-        rev->ap[i].release();
-    }
-
-    for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
-    {
-        rev->dl[i].release();
-    }
-}
-
 static void fluid_lexverb_clear_blocks(fluid_revmodel_lexverb_t *rev)
 {
     int i;
@@ -209,12 +194,8 @@ fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
         return;
     }
 
-    FLUID_MEMSET(ap, 0, sizeof(ap));
-    FLUID_MEMSET(dl, 0, sizeof(dl));
-
     if(fluid_lexverb_setup_blocks(this, sample_rate) != FLUID_OK)
     {
-        fluid_lexverb_release_blocks(this);
         FLUID_LOG(FLUID_ERR, "LEXverb reverb: failed to allocate delay lines");
         return;
     }
@@ -224,7 +205,6 @@ fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
 
 fluid_revmodel_lexverb::~fluid_revmodel_lexverb()
 {
-    fluid_lexverb_release_blocks(this);
 }
 
 void fluid_revmodel_lexverb::processmix(const fluid_real_t *in, fluid_real_t *left_out,
@@ -328,11 +308,8 @@ int fluid_revmodel_lexverb::samplerate_change(fluid_real_t sample_rate)
         return FLUID_FAILED;
     }
 
-    fluid_lexverb_release_blocks(this);
-
     if(fluid_lexverb_setup_blocks(this, sample_rate) != FLUID_OK)
     {
-        fluid_lexverb_release_blocks(this);
         valid = false;
         FLUID_LOG(FLUID_ERR, "LEXverb reverb: failed to reinitialize delay lines");
         return FLUID_FAILED;

@@ -13,6 +13,8 @@
 
 #include "fluid_sys.h"
 
+#include <vector>
+
 /** Algorithm variant used by the allpass filter. */
 enum fluid_reverb_allpass_mode
 {
@@ -47,31 +49,34 @@ template<typename SampleType, typename DampingType = fluid_reverb_delay_damping<
 class fluid_reverb_delay_line
 {
 public:
+    fluid_reverb_delay_line()
+        : size(0),
+          line_in(0),
+          line_out(0),
+          damping(),
+          coefficient(0),
+          last_output(0)
+    {
+    }
+
     /** Allocate the delay buffer with the given length. */
     bool set_buffer(int length)
     {
-        line = FLUID_ARRAY(SampleType, length);
-        if(line == NULL)
+        if(length <= 0)
         {
+            line.clear();
             size = 0;
+            line_in = 0;
+            line_out = 0;
+            last_output = 0;
             return false;
         }
+        line.assign(static_cast<size_t>(length), SampleType());
         size = length;
         line_in = 0;
         line_out = 0;
         last_output = 0;
         return true;
-    }
-
-    /** Release the delay buffer and reset indices. */
-    void release()
-    {
-        FLUID_FREE(line);
-        line = NULL;
-        size = 0;
-        line_in = 0;
-        line_out = 0;
-        last_output = 0;
     }
 
     /** Fill the delay buffer without changing indices. */
@@ -155,7 +160,7 @@ public:
     /** Check if a buffer has been allocated. */
     bool has_buffer() const
     {
-        return line != NULL;
+        return size > 0;
     }
 
     /**
@@ -180,7 +185,7 @@ public:
     }
 
     /** Delay buffer storage. */
-    SampleType *line;
+    std::vector<SampleType> line;
     /** Length of the delay buffer in samples. */
     int size;
     /** Write index into the delay buffer. */
@@ -237,13 +242,6 @@ public:
         }
         last_output = 0;
         return true;
-    }
-
-    /** Release the delay buffer and reset state. */
-    void release()
-    {
-        delay.release();
-        last_output = 0;
     }
 
     /** Fill the delay buffer without changing the current index. */
@@ -336,12 +334,6 @@ public:
         }
         filterstore = 0;
         return true;
-    }
-
-    /** Release the delay buffer and reset state. */
-    void release()
-    {
-        delay.release();
     }
 
     /** Fill the delay buffer without changing the current index. */
