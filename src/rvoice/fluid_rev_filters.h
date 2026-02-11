@@ -281,18 +281,17 @@ public:
         sample_t bufout = delay.read();
         sample_t output;
 
+        sample_t delay_in = input + (bufout * feedback);
         if(mode == FLUID_REVERB_ALLPASS_FREEVERB)
         {
             output = bufout - input;
-            delay.write(input + (bufout * feedback));
         }
         else
         {
-            sample_t delay_in = input + (bufout * feedback);
             output = bufout - (delay_in * feedback);
-            delay.write(delay_in);
         }
 
+        delay.write(delay_in);
         delay.advance_single_tap();
         last_output = output;
         return output;
