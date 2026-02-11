@@ -370,8 +370,3 @@ int fluid_revmodel_freeverb::samplerate_change(fluid_real_t sample_rate)
 {
     return fluid_freeverb_revmodel_samplerate_change(this, sample_rate);
 }
-
-fluid_revmodel_t *new_fluid_revmodel_freeverb(fluid_real_t sample_rate)
-{
-    return new fluid_revmodel_freeverb(sample_rate);
-}

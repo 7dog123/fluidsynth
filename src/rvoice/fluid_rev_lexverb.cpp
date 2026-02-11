@@ -269,8 +269,3 @@ int fluid_revmodel_lexverb::samplerate_change(fluid_real_t sample_rate)
     valid = true;
     return FLUID_OK;
 }
-
-fluid_revmodel_t *new_fluid_revmodel_lexverb(fluid_real_t sample_rate)
-{
-    return new fluid_revmodel_lexverb(sample_rate);
-}
