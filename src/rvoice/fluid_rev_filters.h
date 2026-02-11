@@ -50,7 +50,8 @@ class fluid_reverb_delay_line
 {
 public:
     fluid_reverb_delay_line()
-        : size(0),
+        : line(),
+          size(0),
           line_in(0),
           line_out(0),
           damping(),
@@ -71,7 +72,7 @@ public:
             last_output = 0;
             return false;
         }
-        line.assign(static_cast<size_t>(length), SampleType());
+        line.resize(static_cast<size_t>(length), SampleType());
         size = length;
         line_in = 0;
         line_out = 0;
