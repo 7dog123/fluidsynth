@@ -1496,8 +1496,7 @@ int fluid_revmodel_fdn::samplerate_change(fluid_real_t sample_rate)
                             Reverb API
 -----------------------------------------------------------------------------*/
 fluid_revmodel_t *
-new_fluid_revmodel(fluid_real_t sample_rate_max, fluid_real_t sample_rate,
-                   int reverb_type)
+new_fluid_revmodel(fluid_real_t sample_rate_max, fluid_real_t sample_rate, int reverb_type)
 {
     try
     {
