@@ -416,5 +416,5 @@ int fluid_revmodel_freeverb::samplerate_change(fluid_real_t sample_rate)
 
 fluid_revmodel_t *new_fluid_revmodel_freeverb(fluid_real_t sample_rate)
 {
-    return new(std::nothrow) fluid_revmodel_freeverb(sample_rate);
+    return new fluid_revmodel_freeverb(sample_rate);
 }

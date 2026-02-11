@@ -613,15 +613,9 @@ struct fluid_revmodel_fdn : public _fluid_revmodel_t
 
     /* fdn reverberation structure */
     fluid_late  late;
-    bool valid;
 
     fluid_revmodel_fdn(fluid_real_t sample_rate_max, fluid_real_t sample_rate);
     ~fluid_revmodel_fdn() override;
-
-    bool is_valid() const
-    {
-        return valid;
-    }
 
     void processmix(const fluid_real_t *in, fluid_real_t *left_out,
                     fluid_real_t *right_out) override;
@@ -793,16 +787,6 @@ static void update_stereo_coefficient(fluid_late *late, fluid_real_t wet1)
         late->out_right_gain[i] = wet;
     }
 }
-
-/*-----------------------------------------------------------------------------
- fluid_late destructor.
- @param late pointer on late structure.
------------------------------------------------------------------------------*/
-static void delete_fluid_rev_late(fluid_late *late)
-{
-    fluid_return_if_fail(late != NULL);
-}
-
 
 /* Nominal delay lines length table (in samples) */
 static const int nom_delay_length[NBR_DELAYS] =
@@ -1080,8 +1064,7 @@ fluid_revmodel_fdn::fluid_revmodel_fdn(fluid_real_t sample_rate_max,
       wet1(0.0f),
       wet2(0.0f),
       width(0.0f),
-      late(),
-      valid(false)
+      late()
 {
     if(sample_rate <= 0)
     {
@@ -1111,14 +1094,9 @@ fluid_revmodel_fdn::fluid_revmodel_fdn(fluid_real_t sample_rate_max,
     */
     /* Initialize all modulated lines. */
     initialize_mod_delay_lines(&late, sample_rate);
-
-    valid = true;
 }
 
-fluid_revmodel_fdn::~fluid_revmodel_fdn()
-{
-    delete_fluid_rev_late(&late);
-}
+fluid_revmodel_fdn::~fluid_revmodel_fdn() = default;
 
 /*
 * Sets one or more reverb parameters. Note this must be called at least one
@@ -1541,14 +1519,7 @@ new_fluid_revmodel(fluid_real_t sample_rate_max, fluid_real_t sample_rate,
         }
         else
         {
-            fluid_revmodel_fdn *fdn = new(std::nothrow) fluid_revmodel_fdn(sample_rate_max,
-                                                                          sample_rate);
-            if(fdn != NULL && !fdn->is_valid())
-            {
-                delete fdn;
-                fdn = NULL;
-            }
-            rev = fdn;
+            rev = new fluid_revmodel_fdn(sample_rate_max, sample_rate);
         }
 
         return rev;
