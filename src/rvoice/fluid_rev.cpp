@@ -1234,9 +1234,8 @@ fluid_fdn_revmodel_reset(fluid_revmodel_fdn_t *rev)
 * The processed reverb is replacing anything there in out.
 * Reverb API.
 -----------------------------------------------------------------------------*/
-static void
-fluid_fdn_revmodel_processreplace(fluid_revmodel_fdn_t *rev, const fluid_real_t *in,
-                                  fluid_real_t *left_out, fluid_real_t *right_out)
+void fluid_revmodel_fdn::processreplace(const fluid_real_t *in, fluid_real_t *left_out,
+                                        fluid_real_t *right_out)
 {
     int i, k;
 
@@ -1346,7 +1345,6 @@ fluid_fdn_revmodel_processreplace(fluid_revmodel_fdn_t *rev, const fluid_real_t 
     }
 }
 
-
 /*-----------------------------------------------------------------------------
 * fdn reverb process mix.
 * @param rev pointer on reverb.
@@ -1357,8 +1355,8 @@ fluid_fdn_revmodel_processreplace(fluid_revmodel_fdn_t *rev, const fluid_real_t 
 * The processed reverb is mixed in out with samples already there in out.
 * Reverb API.
 -----------------------------------------------------------------------------*/
-static void fluid_fdn_revmodel_processmix(fluid_revmodel_fdn_t *rev, const fluid_real_t *in,
-                                          fluid_real_t *left_out, fluid_real_t *right_out)
+void fluid_revmodel_fdn::processmix(const fluid_real_t *in, fluid_real_t *left_out,
+                                    fluid_real_t *right_out)
 {
     int i, k;
 
@@ -1464,18 +1462,6 @@ static void fluid_fdn_revmodel_processmix(fluid_revmodel_fdn_t *rev, const fluid
         left_out[k]  += out_left  + out_right * rev->wet2;
         right_out[k] += out_right + out_left * rev->wet2;
     }
-}
-
-void fluid_revmodel_fdn::processmix(const fluid_real_t *in, fluid_real_t *left_out,
-                                    fluid_real_t *right_out)
-{
-    fluid_fdn_revmodel_processmix(this, in, left_out, right_out);
-}
-
-void fluid_revmodel_fdn::processreplace(const fluid_real_t *in, fluid_real_t *left_out,
-                                        fluid_real_t *right_out)
-{
-    fluid_fdn_revmodel_processreplace(this, in, left_out, right_out);
 }
 
 void fluid_revmodel_fdn::reset()
