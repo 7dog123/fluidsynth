@@ -57,7 +57,7 @@ static int fluid_lexverb_ms_to_buf_length(float ms, fluid_real_t sample_rate)
     return ms * (sample_rate * (1 / 1000.0f));
 }
 
-static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_t sample_rate)
+static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_t sample_rate)
 {
     int i;
     for(i = 0; i < NUM_OF_AP_SECTS; ++i)
@@ -83,8 +83,6 @@ static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_
     }
 
     fluid_lexverb_clear_blocks(rev);
-
-    return FLUID_OK;
 }
 
 static void fluid_lexverb_update(fluid_revmodel_lexverb_t *rev)
@@ -136,22 +134,15 @@ fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
       wet1(0.0f),
       wet2(0.0f),
       width(0.0f),
-      valid(false),
       damp_state_left(0.0f),
       damp_state_right(0.0f)
 {
     if(sample_rate <= 0.0f)
     {
-        return;
+        throw std::invalid_argument("Sample rate must be positive");
     }
 
-    if(fluid_lexverb_setup_blocks(this, sample_rate) != FLUID_OK)
-    {
-        FLUID_LOG(FLUID_ERR, "LEXverb reverb: failed to allocate delay lines");
-        return;
-    }
-
-    valid = true;
+    fluid_lexverb_setup_blocks(this, sample_rate);
 }
 
 fluid_revmodel_lexverb::~fluid_revmodel_lexverb()
@@ -174,11 +165,6 @@ void fluid_revmodel_lexverb::process(const fluid_real_t *in, fluid_real_t *left_
                                      fluid_real_t *right_out)
 {
     int i;
-
-    if(!valid)
-    {
-        return;
-    }
 
     for(i = 0; i < FLUID_BUFSIZE; ++i)
     {
@@ -205,11 +191,6 @@ void fluid_revmodel_lexverb::process(const fluid_real_t *in, fluid_real_t *left_
 
 void fluid_revmodel_lexverb::reset()
 {
-    if(!valid)
-    {
-        return;
-    }
-
     fluid_lexverb_clear_blocks(this);
 }
 
@@ -245,18 +226,6 @@ void fluid_revmodel_lexverb::set(int set, fluid_real_t roomsize, fluid_real_t da
 
 int fluid_revmodel_lexverb::samplerate_change(fluid_real_t sample_rate)
 {
-    if(sample_rate <= 0.0f)
-    {
-        return FLUID_FAILED;
-    }
-
-    if(fluid_lexverb_setup_blocks(this, sample_rate) != FLUID_OK)
-    {
-        valid = false;
-        FLUID_LOG(FLUID_ERR, "LEXverb reverb: failed to reinitialize delay lines");
-        return FLUID_FAILED;
-    }
-
-    valid = true;
-    return FLUID_OK;
+    FLUID_LOG(FLUID_ERR, "LEXverb reverb: sample rate change is not supported");
+    return FLUID_FAILED;
 }

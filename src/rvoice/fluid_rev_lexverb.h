@@ -64,7 +64,6 @@ struct fluid_revmodel_lexverb : public _fluid_revmodel_t
     fluid_real_t wet1;
     fluid_real_t wet2;
     fluid_real_t width;
-    bool valid;
     float damp_state_left;
     float damp_state_right;
 
@@ -74,10 +73,6 @@ struct fluid_revmodel_lexverb : public _fluid_revmodel_t
     explicit fluid_revmodel_lexverb(fluid_real_t sample_rate);
     ~fluid_revmodel_lexverb() override;
 
-    bool is_valid() const
-    {
-        return valid;
-    }
     void processmix(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) override;
     void processreplace(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) override;
 
