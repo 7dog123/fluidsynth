@@ -158,8 +158,8 @@ fluid_revmodel_lexverb::~fluid_revmodel_lexverb()
 {
 }
 
-void fluid_revmodel_lexverb::processmix(const fluid_real_t *in, fluid_real_t *left_out,
-                                        fluid_real_t *right_out)
+void fluid_revmodel_lexverb::process(const fluid_real_t *in, fluid_real_t *left_out,
+                                     fluid_real_t *right_out, bool mix)
 {
     int i;
 
@@ -180,35 +180,16 @@ void fluid_revmodel_lexverb::processmix(const fluid_real_t *in, fluid_real_t *le
         out_left = (fluid_real_t)left * wet1 + (fluid_real_t)right * wet2;
         out_right = (fluid_real_t)right * wet1 + (fluid_real_t)left * wet2;
 
-        left_out[i] += out_left;
-        right_out[i] += out_right;
-    }
-}
-
-void fluid_revmodel_lexverb::processreplace(const fluid_real_t *in, fluid_real_t *left_out,
-                                            fluid_real_t *right_out)
-{
-    int i;
-
-    if(!valid)
-    {
-        return;
-    }
-
-    for(i = 0; i < FLUID_BUFSIZE; ++i)
-    {
-        float left = 0.0f;
-        float right = 0.0f;
-        fluid_real_t out_left;
-        fluid_real_t out_right;
-
-        fluid_lexverb_process_sample(this, (float)in[i], &left, &right);
-
-        out_left = (fluid_real_t)left * wet1 + (fluid_real_t)right * wet2;
-        out_right = (fluid_real_t)right * wet1 + (fluid_real_t)left * wet2;
-
-        left_out[i] = out_left;
-        right_out[i] = out_right;
+        if(mix)
+        {
+            left_out[i] += out_left;
+            right_out[i] += out_right;
+        }
+        else
+        {
+            left_out[i] = out_left;
+            right_out[i] = out_right;
+        }
     }
 }
 

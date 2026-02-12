@@ -55,8 +55,8 @@ struct fluid_revmodel_freeverb : public _fluid_revmodel_t
     explicit fluid_revmodel_freeverb(fluid_real_t sample_rate);
     ~fluid_revmodel_freeverb() override;
 
-    void processmix(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) override;
-    void processreplace(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) override;
+    void process(const fluid_real_t *in, fluid_real_t *left_out,
+                 fluid_real_t *right_out, bool mix) override;
     void reset() override;
     void set(int set, fluid_real_t roomsize, fluid_real_t damping, fluid_real_t width, fluid_real_t level) override;
     int samplerate_change(fluid_real_t sample_rate) override;

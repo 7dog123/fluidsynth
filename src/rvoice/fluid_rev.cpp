@@ -616,10 +616,8 @@ struct fluid_revmodel_fdn : public _fluid_revmodel_t
     fluid_revmodel_fdn(fluid_real_t sample_rate_max, fluid_real_t sample_rate);
     ~fluid_revmodel_fdn() override;
 
-    void processmix(const fluid_real_t *in, fluid_real_t *left_out,
-                    fluid_real_t *right_out) override;
-    void processreplace(const fluid_real_t *in, fluid_real_t *left_out,
-                        fluid_real_t *right_out) override;
+    void process(const fluid_real_t *in, fluid_real_t *left_out,
+                 fluid_real_t *right_out, bool mix) override;
     void reset() override;
     void set(int set, fluid_real_t roomsize, fluid_real_t damping,
              fluid_real_t width, fluid_real_t level) override;
@@ -1225,17 +1223,17 @@ fluid_fdn_revmodel_reset(fluid_revmodel_fdn_t *rev)
 }
 
 /*-----------------------------------------------------------------------------
-* fdn reverb process replace.
-* @param rev pointer on reverb.
-* @param in monophonic buffer input (FLUID_BUFSIZE sample).
-* @param left_out stereo left processed output (FLUID_BUFSIZE sample).
-* @param right_out stereo right processed output (FLUID_BUFSIZE sample).
-*
-* The processed reverb is replacing anything there in out.
-* Reverb API.
------------------------------------------------------------------------------*/
-void fluid_revmodel_fdn::processreplace(const fluid_real_t *in, fluid_real_t *left_out,
-                                        fluid_real_t *right_out)
+ * fdn reverb process.
+ * @param rev pointer on reverb.
+ * @param in monophonic buffer input (FLUID_BUFSIZE sample).
+ * @param left_out stereo left processed output (FLUID_BUFSIZE sample).
+ * @param right_out stereo right processed output (FLUID_BUFSIZE sample).
+ *
+ * The processed reverb is mixed with or replaces anything already there in out.
+ * Reverb API.
+ -----------------------------------------------------------------------------*/
+void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
+                                 fluid_real_t *right_out, bool mix)
 {
     int i, k;
 
@@ -1328,7 +1326,7 @@ void fluid_revmodel_fdn::processreplace(const fluid_real_t *in, fluid_real_t *le
         out_right -= DC_OFFSET;
 #endif
 
-        /* Calculates stereo output REPLACING anything already there: */
+        /* Calculates stereo output: */
         /*
             left_out[k]  = out_left * rev->wet1 + out_right * rev->wet2;
             right_out[k] = out_right * rev->wet1 + out_left * rev->wet2;
@@ -1340,127 +1338,19 @@ void fluid_revmodel_fdn::processreplace(const fluid_real_t *in, fluid_real_t *le
             left_out[k]  = out_left  + out_right * rev->wet2;
             right_out[k] = out_right + out_left * rev->wet2;
         */
-        left_out[k]  = out_left  + out_right * rev->wet2;
-        right_out[k] = out_right + out_left * rev->wet2;
-    }
-}
+        fluid_real_t out_mixed_left = out_left  + out_right * rev->wet2;
+        fluid_real_t out_mixed_right = out_right + out_left * rev->wet2;
 
-/*-----------------------------------------------------------------------------
-* fdn reverb process mix.
-* @param rev pointer on reverb.
-* @param in monophonic buffer input (FLUID_BUFSIZE samples).
-* @param left_out stereo left processed output (FLUID_BUFSIZE samples).
-* @param right_out stereo right processed output (FLUID_BUFSIZE samples).
-*
-* The processed reverb is mixed in out with samples already there in out.
-* Reverb API.
------------------------------------------------------------------------------*/
-void fluid_revmodel_fdn::processmix(const fluid_real_t *in, fluid_real_t *left_out,
-                                    fluid_real_t *right_out)
-{
-    int i, k;
-
-    fluid_real_t xn;                   /* mono input x(n) */
-    fluid_real_t out_tone_filter;      /* tone corrector output */
-    fluid_real_t out_left, out_right;  /* output stereo Left  and Right  */
-    fluid_real_t matrix_factor;        /* partial matrix term */
-    fluid_real_t delay_out_s;          /* sample */
-    fluid_real_t delay_out[NBR_DELAYS]; /* Line output + damper output */
-
-    for(k = 0; k < FLUID_BUFSIZE; k++)
-    {
-        /* stereo output */
-        out_left = out_right = 0;
-#ifdef DENORMALISING
-        /* Input is adjusted by DC_OFFSET. */
-        xn = (in[k]) * FIXED_GAIN + DC_OFFSET;
-#else
-        xn = (in[k]) * FIXED_GAIN;
-#endif
-
-        /*--------------------------------------------------------------------
-         tone correction
-        */
-        out_tone_filter = xn * rev->late.b1 - rev->late.b2 * rev->late.tone_buffer;
-        rev->late.tone_buffer = xn;
-        xn = out_tone_filter;
-        /*--------------------------------------------------------------------
-         process feedback delayed network:
-          - xn is the input signal.
-          - before inserting in the line input we first we get the delay lines
-            output, filter them and compute output in local delay_out[].
-          - also matrix_factor is computed (to simplify further matrix product).
-        ---------------------------------------------------------------------*/
-        /* We begin with the modulated output delay line + damping filter */
-        matrix_factor = 0;
-
-        for(i = 0; i < NBR_DELAYS; i++)
+        if(mix)
         {
-            mod_delay_line *mdl = &rev->late.mod_delay_lines[i];
-            /* get current modulated output */
-            delay_out_s = get_mod_delay(mdl);
-
-            /* process low pass damping filter
-              (input:delay_out_s, output:delay_out_s) */
-            process_damping_filter(delay_out_s, delay_out_s, mdl);
-
-            /* Result in delay_out[], and matrix_factor.
-               These will be of use later during input line process */
-            delay_out[i] = delay_out_s;   /* result in delay_out[] */
-            matrix_factor += delay_out_s; /* result in matrix_factor */
-
-            /* Process stereo output */
-            /* stereo left = left + out_left_gain * delay_out */
-            out_left += rev->late.out_left_gain[i] * delay_out_s;
-            /* stereo right= right+ out_right_gain * delay_out */
-            out_right += rev->late.out_right_gain[i] * delay_out_s;
+            left_out[k]  += out_mixed_left;
+            right_out[k] += out_mixed_right;
         }
-
-        /* now we process the input delay line. Each input is a combination of:
-           - xn: input signal
-           - delay_out[] the output of a delay line given by a permutation matrix P
-           - and matrix_factor.
-          This computes: in_delay_line = xn + (delay_out[] * matrix A) with
-          an algorithm equivalent but faster than using a product with matrix A.
-        */
-        /* matrix_factor = output sum * (-2.0)/N  */
-        matrix_factor *= FDN_MATRIX_FACTOR;
-        matrix_factor += xn; /* adds reverb input signal */
-
-        for(i = 1; i < NBR_DELAYS; i++)
+        else
         {
-            /* delay_in[i-1] = delay_out[i] + matrix_factor */
-            delay_line *dl = &rev->late.mod_delay_lines[i - 1].dl;
-            push_in_delay_line(dl, delay_out[i] + matrix_factor);
+            left_out[k]  = out_mixed_left;
+            right_out[k] = out_mixed_right;
         }
-
-        /* last line input (NB_DELAY-1) */
-        /* delay_in[0] = delay_out[NB_DELAY -1] + matrix_factor */
-        {
-            delay_line *dl = &rev->late.mod_delay_lines[NBR_DELAYS - 1].dl;
-            push_in_delay_line(dl, delay_out[0] + matrix_factor);
-        }
-
-        /*-------------------------------------------------------------------*/
-#ifdef DENORMALISING
-        /* Removes the DC offset */
-        out_left -= DC_OFFSET;
-        out_right -= DC_OFFSET;
-#endif
-        /* Calculates stereo output MIXING anything already there: */
-        /*
-            left_out[k]  += out_left * rev->wet1 + out_right * rev->wet2;
-            right_out[k] += out_right * rev->wet1 + out_left * rev->wet2;
-
-            As wet1 is integrated in stereo coefficient wet 1 is now
-            integrated in out_left and out_right, so we simplify previous
-            relation by suppression of one multiply as this:
-
-            left_out[k]  += out_left  + out_right * rev->wet2;
-            right_out[k] += out_right + out_left * rev->wet2;
-        */
-        left_out[k]  += out_left  + out_right * rev->wet2;
-        right_out[k] += out_right + out_left * rev->wet2;
     }
 }
 

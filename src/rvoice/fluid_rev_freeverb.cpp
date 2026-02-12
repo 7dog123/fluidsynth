@@ -255,8 +255,8 @@ fluid_freeverb_revmodel_samplerate_change(fluid_revmodel_freeverb_t *rev,
     return FLUID_OK;
 }
 
-void fluid_revmodel_freeverb::processmix(const fluid_real_t *in, fluid_real_t *left_out,
-                                         fluid_real_t *right_out)
+void fluid_revmodel_freeverb::process(const fluid_real_t *in, fluid_real_t *left_out,
+                                      fluid_real_t *right_out, bool mix)
 {
     int i, k = 0;
     fluid_real_t outL, outR, input;
@@ -290,50 +290,21 @@ void fluid_revmodel_freeverb::processmix(const fluid_real_t *in, fluid_real_t *l
         outL -= DC_OFFSET;
         outR -= DC_OFFSET;
 
-        /* Calculate output MIXING with anything already there */
-        left_out[k] += outL * rev->wet1 + outR * rev->wet2;
-        right_out[k] += outR * rev->wet1 + outL * rev->wet2;
-    }
-}
+        fluid_real_t out_left = outL * rev->wet1 + outR * rev->wet2;
+        fluid_real_t out_right = outR * rev->wet1 + outL * rev->wet2;
 
-void fluid_revmodel_freeverb::processreplace(const fluid_real_t *in, fluid_real_t *left_out,
-                                             fluid_real_t *right_out)
-{
-    int i, k = 0;
-    fluid_real_t outL, outR, input;
-
-    for(k = 0; k < FLUID_BUFSIZE; k++)
-    {
-
-        outL = outR = 0;
-
-        /* The original Freeverb code expects a stereo signal and 'input'
-         * is set to the sum of the left and right input sample. Since
-         * this code works on a mono signal, 'input' is set to twice the
-         * input sample. */
-        input = (2.0f * in[k] + DC_OFFSET) * rev->gain;
-
-        /* Accumulate comb filters in parallel */
-        for(i = 0; i < numcombs; i++)
+        if(mix)
         {
-            outL += rev->combL[i].process(input);
-            outR += rev->combR[i].process(input);
+            /* Calculate output MIXING with anything already there */
+            left_out[k] += out_left;
+            right_out[k] += out_right;
         }
-
-        /* Feed through allpasses in series */
-        for(i = 0; i < numallpasses; i++)
+        else
         {
-            outL = rev->allpassL[i].process(outL);
-            outR = rev->allpassR[i].process(outR);
+            /* Calculate output REPLACING anything already there */
+            left_out[k] = out_left;
+            right_out[k] = out_right;
         }
-
-        /* Remove the DC offset */
-        outL -= DC_OFFSET;
-        outR -= DC_OFFSET;
-
-        /* Calculate output REPLACING anything already there */
-        left_out[k] = outL * rev->wet1 + outR * rev->wet2;
-        right_out[k] = outR * rev->wet1 + outL * rev->wet2;
     }
 }
 

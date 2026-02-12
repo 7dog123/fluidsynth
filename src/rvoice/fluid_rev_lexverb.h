@@ -79,10 +79,8 @@ struct fluid_revmodel_lexverb : public _fluid_revmodel_t
         return valid;
     }
 
-    void processmix(const fluid_real_t *in, fluid_real_t *left_out,
-                    fluid_real_t *right_out) override;
-    void processreplace(const fluid_real_t *in, fluid_real_t *left_out,
-                        fluid_real_t *right_out) override;
+    void process(const fluid_real_t *in, fluid_real_t *left_out,
+                 fluid_real_t *right_out, bool mix) override;
     void reset() override;
     void set(int set, fluid_real_t roomsize, fluid_real_t damping,
              fluid_real_t width, fluid_real_t level) override;
