@@ -61,18 +61,16 @@ public:
     /** Allocate the delay buffer with the given length. */
     void set_buffer(int length)
     {
-        if(length <= 0)
-        {
-            line.clear();
-            line_in = 0;
-            line_out = 0;
-            last_output = 0;
-            throw std::invalid_argument("Delay buffer length must be positive");
-        }
-        line.resize(static_cast<size_t>(length), sample_t());
         line_in = 0;
         line_out = 0;
         last_output = 0;
+        if(length <= 0)
+        {
+            line.clear();
+            line.shrink_to_fit();
+            throw std::invalid_argument("Delay buffer length must be positive");
+        }
+        line.resize(static_cast<size_t>(length), sample_t());
     }
 
     /** Fill the delay buffer without changing indices. */
@@ -175,12 +173,8 @@ public:
         sample_t output = line[line_out];
         line[line_out] = input;
 
-        if(++line_out >= size())
-        {
-            line_out = 0;
-        }
+        advance_single_tap();
 
-        line_in = line_out;
         last_output = output;
         return output;
     }

@@ -336,12 +336,7 @@ static void set_fdn_delay_lpf(fdn_delay_lpf *lpf,
 -----------------------------------------------------------------------------*/
 static void clear_delay_line(delay_line *dl)
 {
-    int i;
-
-    for(i = 0; i < dl->size(); i++)
-    {
-        dl->line[i] = DC_OFFSET;
-    }
+    dl->fill_buffer(DC_OFFSET);
 }
 
 /*-----------------------------------------------------------------------------
