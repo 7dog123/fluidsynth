@@ -54,7 +54,7 @@ static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real
         rev->dl[i].set_last_output(0.0f);
     }
 
-    this->reset();
+    rev->reset();
 }
 
 static void fluid_lexverb_update(fluid_revmodel_lexverb_t *rev)
@@ -165,26 +165,26 @@ void fluid_revmodel_lexverb::reset()
 
     for(i = 0; i < NUM_OF_AP_SECTS; ++i)
     {
-        if(rev->ap[i].has_buffer())
+        if(this->ap[i].has_buffer())
         {
-            rev->ap[i].fill_buffer(0.0f);
-            rev->ap[i].set_index(1);
+            this->ap[i].fill_buffer(0.0f);
+            this->ap[i].set_index(1);
         }
-        rev->ap[i].set_last_output(0.0f);
+        this->ap[i].set_last_output(0.0f);
     }
 
     for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
     {
-        if(rev->dl[i].has_buffer())
+        if(this->dl[i].has_buffer())
         {
-            rev->dl[i].fill_buffer(0.0f);
-            rev->dl[i].set_positions(1, 1);
+            this->dl[i].fill_buffer(0.0f);
+            this->dl[i].set_positions(1, 1);
         }
-        rev->dl[i].set_last_output(0.0f);
+        this->dl[i].set_last_output(0.0f);
     }
 
-    rev->damp_state_left = 0.0f;
-    rev->damp_state_right = 0.0f;
+    this->damp_state_left = 0.0f;
+    this->damp_state_right = 0.0f;
 }
 
 void fluid_revmodel_lexverb::set(int set, fluid_real_t roomsize, fluid_real_t damping,
