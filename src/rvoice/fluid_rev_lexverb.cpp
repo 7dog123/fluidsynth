@@ -26,7 +26,7 @@ constexpr float LEX_SCALE_WET_WIDTH = 0.2f;
 
 static int fluid_lexverb_ms_to_buf_length(float ms, fluid_real_t sample_rate)
 {
-    return ms * (sample_rate * (1 / 1000.0f));
+    return static_cast<int>(ms * (sample_rate * (1 / 1000.0f)) + 0.5f);
 }
 
 static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_t sample_rate)
