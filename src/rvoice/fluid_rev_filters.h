@@ -17,7 +17,7 @@
 /** Algorithm variant used by the allpass filter. */
 enum fluid_reverb_allpass_mode
 {
-    /** Freeverb-style allpass implementation. */
+    /** Freeverb-style allpass implementation, see https://ccrma.stanford.edu/~jos/Reverb/Freeverb_Allpass_Approximation.html */
     FLUID_REVERB_ALLPASS_FREEVERB,
     /** Standard Schroeder allpass implementation. */
     FLUID_REVERB_ALLPASS_SCHROEDER
