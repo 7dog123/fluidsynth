@@ -24,34 +24,6 @@
 constexpr float LEX_TRIM = 0.7f;
 constexpr float LEX_SCALE_WET_WIDTH = 0.2f;
 
-static void fluid_lexverb_clear_blocks(fluid_revmodel_lexverb_t *rev)
-{
-    int i;
-
-    for(i = 0; i < NUM_OF_AP_SECTS; ++i)
-    {
-        if(rev->ap[i].has_buffer())
-        {
-            rev->ap[i].fill_buffer(0.0f);
-            rev->ap[i].set_index(1);
-        }
-        rev->ap[i].set_last_output(0.0f);
-    }
-
-    for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
-    {
-        if(rev->dl[i].has_buffer())
-        {
-            rev->dl[i].fill_buffer(0.0f);
-            rev->dl[i].set_positions(1, 1);
-        }
-        rev->dl[i].set_last_output(0.0f);
-    }
-
-    rev->damp_state_left = 0.0f;
-    rev->damp_state_right = 0.0f;
-}
-
 static int fluid_lexverb_ms_to_buf_length(float ms, fluid_real_t sample_rate)
 {
     return ms * (sample_rate * (1 / 1000.0f));
@@ -82,7 +54,7 @@ static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real
         rev->dl[i].set_last_output(0.0f);
     }
 
-    fluid_lexverb_clear_blocks(rev);
+    this->reset();
 }
 
 static void fluid_lexverb_update(fluid_revmodel_lexverb_t *rev)
@@ -145,9 +117,7 @@ fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
     fluid_lexverb_setup_blocks(this, sample_rate);
 }
 
-fluid_revmodel_lexverb::~fluid_revmodel_lexverb()
-{
-}
+fluid_revmodel_lexverb::~fluid_revmodel_lexverb() = default;
 
 
 void fluid_revmodel_lexverb::processmix(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out)
@@ -191,7 +161,30 @@ void fluid_revmodel_lexverb::process(const fluid_real_t *in, fluid_real_t *left_
 
 void fluid_revmodel_lexverb::reset()
 {
-    fluid_lexverb_clear_blocks(this);
+    int i;
+
+    for(i = 0; i < NUM_OF_AP_SECTS; ++i)
+    {
+        if(rev->ap[i].has_buffer())
+        {
+            rev->ap[i].fill_buffer(0.0f);
+            rev->ap[i].set_index(1);
+        }
+        rev->ap[i].set_last_output(0.0f);
+    }
+
+    for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
+    {
+        if(rev->dl[i].has_buffer())
+        {
+            rev->dl[i].fill_buffer(0.0f);
+            rev->dl[i].set_positions(1, 1);
+        }
+        rev->dl[i].set_last_output(0.0f);
+    }
+
+    rev->damp_state_left = 0.0f;
+    rev->damp_state_right = 0.0f;
 }
 
 void fluid_revmodel_lexverb::set(int set, fluid_real_t roomsize, fluid_real_t damping,
