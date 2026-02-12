@@ -255,8 +255,18 @@ fluid_freeverb_revmodel_samplerate_change(fluid_revmodel_freeverb_t *rev,
     return FLUID_OK;
 }
 
-void fluid_revmodel_freeverb::process(const fluid_real_t *in, fluid_real_t *left_out,
-                                      fluid_real_t *right_out, bool mix)
+void fluid_revmodel_freeverb::processmix(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out)
+{
+    process<true>(in, left_out, right_out);
+}
+
+void fluid_revmodel_freeverb::processreplace(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out)
+{
+    process<false>(in, left_out, right_out);
+}
+
+template<bool MIX>
+void fluid_revmodel_freeverb::process(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out)
 {
     int i, k = 0;
     fluid_real_t outL, outR, input;
@@ -270,30 +280,30 @@ void fluid_revmodel_freeverb::process(const fluid_real_t *in, fluid_real_t *left
          * is set to the sum of the left and right input sample. Since
          * this code works on a mono signal, 'input' is set to twice the
          * input sample. */
-        input = (2.0f * in[k] + DC_OFFSET) * rev->gain;
+        input = (2.0f * in[k] + DC_OFFSET) * this->gain;
 
         /* Accumulate comb filters in parallel */
         for(i = 0; i < numcombs; i++)
         {
-            outL += rev->combL[i].process(input);
-            outR += rev->combR[i].process(input);
+            outL += this->combL[i].process(input);
+            outR += this->combR[i].process(input);
         }
 
         /* Feed through allpasses in series */
         for(i = 0; i < numallpasses; i++)
         {
-            outL = rev->allpassL[i].process(outL);
-            outR = rev->allpassR[i].process(outR);
+            outL = this->allpassL[i].process(outL);
+            outR = this->allpassR[i].process(outR);
         }
 
         /* Remove the DC offset */
         outL -= DC_OFFSET;
         outR -= DC_OFFSET;
 
-        fluid_real_t out_left = outL * rev->wet1 + outR * rev->wet2;
-        fluid_real_t out_right = outR * rev->wet1 + outL * rev->wet2;
+        fluid_real_t out_left = outL * this->wet1 + outR * this->wet2;
+        fluid_real_t out_right = outR * this->wet1 + outL * this->wet2;
 
-        if(mix)
+        if(MIX)
         {
             /* Calculate output MIXING with anything already there */
             left_out[k] += out_left;

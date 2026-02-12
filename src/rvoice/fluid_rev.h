@@ -29,21 +29,10 @@ typedef struct _fluid_revmodel_t fluid_revmodel_t;
 struct _fluid_revmodel_t
 {
     virtual ~_fluid_revmodel_t() {}
-    virtual void processmix(const fluid_real_t *in, fluid_real_t *left_out,
-                            fluid_real_t *right_out)
-    {
-        process(in, left_out, right_out, true);
-    }
-    virtual void processreplace(const fluid_real_t *in, fluid_real_t *left_out,
-                                fluid_real_t *right_out)
-    {
-        process(in, left_out, right_out, false);
-    }
-    virtual void process(const fluid_real_t *in, fluid_real_t *left_out,
-                         fluid_real_t *right_out, bool mix) = 0;
+    virtual void processmix(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) = 0;
+    virtual void processreplace(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) = 0;
     virtual void reset() = 0;
-    virtual void set(int set, fluid_real_t roomsize, fluid_real_t damping,
-                     fluid_real_t width, fluid_real_t level) = 0;
+    virtual void set(int set, fluid_real_t roomsize, fluid_real_t damping, fluid_real_t width, fluid_real_t level) = 0;
     virtual int samplerate_change(fluid_real_t sample_rate) = 0;
 };
 

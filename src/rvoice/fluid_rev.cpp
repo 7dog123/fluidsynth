@@ -616,12 +616,16 @@ struct fluid_revmodel_fdn : public _fluid_revmodel_t
     fluid_revmodel_fdn(fluid_real_t sample_rate_max, fluid_real_t sample_rate);
     ~fluid_revmodel_fdn() override;
 
-    void process(const fluid_real_t *in, fluid_real_t *left_out,
-                 fluid_real_t *right_out, bool mix) override;
+    void processmix(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) override;
+    void processreplace(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) override;
     void reset() override;
     void set(int set, fluid_real_t roomsize, fluid_real_t damping,
              fluid_real_t width, fluid_real_t level) override;
     int samplerate_change(fluid_real_t sample_rate) override;
+
+private:
+    template<bool MIX>
+    void process(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out);
 };
 
 typedef struct fluid_revmodel_fdn fluid_revmodel_fdn_t;
@@ -1222,6 +1226,16 @@ fluid_fdn_revmodel_reset(fluid_revmodel_fdn_t *rev)
     fluid_fdn_revmodel_init(rev);
 }
 
+void fluid_revmodel_fdn::processmix(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out)
+{
+    process<true>(in, left_out, right_out);
+}
+
+void fluid_revmodel_fdn::processreplace(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out)
+{
+    process<false>(in, left_out, right_out);
+}
+
 /*-----------------------------------------------------------------------------
  * fdn reverb process.
  * @param rev pointer on reverb.
@@ -1232,8 +1246,9 @@ fluid_fdn_revmodel_reset(fluid_revmodel_fdn_t *rev)
  * The processed reverb is mixed with or replaces anything already there in out.
  * Reverb API.
  -----------------------------------------------------------------------------*/
+template<bool MIX>
 void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
-                                 fluid_real_t *right_out, bool mix)
+                                 fluid_real_t *right_out)
 {
     int i, k;
 
@@ -1259,8 +1274,8 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
         /*--------------------------------------------------------------------
          tone correction.
         */
-        out_tone_filter = xn * rev->late.b1 - rev->late.b2 * rev->late.tone_buffer;
-        rev->late.tone_buffer = xn;
+        out_tone_filter = xn * this->late.b1 - this->late.b2 * this->late.tone_buffer;
+        this->late.tone_buffer = xn;
         xn = out_tone_filter;
         /*--------------------------------------------------------------------
          process  feedback delayed network:
@@ -1274,7 +1289,7 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
 
         for(i = 0; i < NBR_DELAYS; i++)
         {
-            mod_delay_line *mdl = &rev->late.mod_delay_lines[i];
+            mod_delay_line *mdl = &this->late.mod_delay_lines[i];
             /* get current modulated output */
             delay_out_s = get_mod_delay(mdl);
 
@@ -1289,9 +1304,9 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
 
             /* Process stereo output */
             /* stereo left = left + out_left_gain * delay_out */
-            out_left += rev->late.out_left_gain[i] * delay_out_s;
+            out_left += this->late.out_left_gain[i] * delay_out_s;
             /* stereo right= right+ out_right_gain * delay_out */
-            out_right += rev->late.out_right_gain[i] * delay_out_s;
+            out_right += this->late.out_right_gain[i] * delay_out_s;
         }
 
         /* now we process the input delay line.Each input is a combination of
@@ -1308,14 +1323,14 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
         for(i = 1; i < NBR_DELAYS; i++)
         {
             /* delay_in[i-1] = delay_out[i] + matrix_factor */
-            delay_line *dl = &rev->late.mod_delay_lines[i - 1].dl;
+            delay_line *dl = &this->late.mod_delay_lines[i - 1].dl;
             push_in_delay_line(dl, delay_out[i] + matrix_factor);
         }
 
         /* last line input (NB_DELAY-1) */
         /* delay_in[0] = delay_out[NB_DELAY -1] + matrix_factor */
         {
-            delay_line *dl = &rev->late.mod_delay_lines[NBR_DELAYS - 1].dl;
+            delay_line *dl = &this->late.mod_delay_lines[NBR_DELAYS - 1].dl;
             push_in_delay_line(dl, delay_out[0] + matrix_factor);
         }
 
@@ -1328,20 +1343,20 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
 
         /* Calculates stereo output: */
         /*
-            left_out[k]  = out_left * rev->wet1 + out_right * rev->wet2;
-            right_out[k] = out_right * rev->wet1 + out_left * rev->wet2;
+            left_out[k]  = out_left * this->wet1 + out_right * this->wet2;
+            right_out[k] = out_right * this->wet1 + out_left * this->wet2;
 
             As wet1 is integrated in stereo coefficient wet 1 is now
             integrated in out_left and out_right, so we simplify previous
             relation by suppression of one multiply as this:
 
-            left_out[k]  = out_left  + out_right * rev->wet2;
-            right_out[k] = out_right + out_left * rev->wet2;
+            left_out[k]  = out_left  + out_right * this->wet2;
+            right_out[k] = out_right + out_left * this->wet2;
         */
-        fluid_real_t out_mixed_left = out_left  + out_right * rev->wet2;
-        fluid_real_t out_mixed_right = out_right + out_left * rev->wet2;
+        fluid_real_t out_mixed_left = out_left  + out_right * this->wet2;
+        fluid_real_t out_mixed_right = out_right + out_left * this->wet2;
 
-        if(mix)
+        if(MIX)
         {
             left_out[k]  += out_mixed_left;
             right_out[k] += out_mixed_right;
