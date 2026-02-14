@@ -61,16 +61,15 @@ public:
     /** Allocate the delay buffer with the given length. */
     void set_buffer(int length)
     {
+        if(length <= 0)
+        {
+            throw std::invalid_argument("Delay buffer length must be positive");
+        }
         line_in = 0;
         line_out = 0;
         last_output = 0;
-        if(length <= 0)
-        {
-            line.clear();
-            line.shrink_to_fit();
-            throw std::invalid_argument("Delay buffer length must be positive");
-        }
         line.resize(static_cast<size_t>(length), sample_t());
+        // do not call shrink_to_fit() here since the buffer is inited by its biggest size and may be decrease again later in realtime, while avoiding unnecessary reallocations
     }
 
     /** Fill the delay buffer without changing indices. */
