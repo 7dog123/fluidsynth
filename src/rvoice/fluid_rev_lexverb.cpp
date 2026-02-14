@@ -20,21 +20,24 @@
 
 #include "fluid_sys.h"
 #include "fluid_rev_lexverb.h"
+#include "fluid_conv_tables.h"
+#include "fluid_conv.h"
 
 constexpr float LEX_TRIM = 0.7f;
 constexpr float LEX_SCALE_WET_WIDTH = 0.2f;
+constexpr float LEX_DELAY_SCALE = 100.0f;
 
 static int fluid_lexverb_ms_to_buf_length(float ms, fluid_real_t sample_rate)
 {
     return static_cast<int>(ms * (sample_rate * (1 / 1000.0f)) + 0.5f);
 }
 
-static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_t sample_rate)
+static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev)
 {
     int i;
     for(i = 0; i < NUM_OF_AP_SECTS; ++i)
     {
-        int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[i].length, sample_rate);
+        int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[i].length, rev->cached_sample_rate);
 
         rev->ap[i].set_mode(FLUID_REVERB_ALLPASS_SCHROEDER);
         rev->ap[i].set_feedback(LEX_REVERB_PARMS[i].coef);
@@ -46,7 +49,11 @@ static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real
     for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
     {
         int index = NUM_OF_AP_SECTS + i;
-        int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[index].length, sample_rate);
+        int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[index].length, rev->cached_sample_rate);
+        FLUID_LOG(FLUID_DBG, "Lexverb delay line %d: default length = %d samples", i, length);
+        length *= LEX_DELAY_SCALE;
+        length++; // prevent zero length delay lines
+        FLUID_LOG(FLUID_DBG, "Lexverb delay line %d: MAX length = %d samples", i, length);
 
         rev->dl[i].set_coefficient(LEX_REVERB_PARMS[index].coef);
         rev->dl[i].set_buffer(length);
@@ -65,6 +72,16 @@ static void fluid_lexverb_update(fluid_revmodel_lexverb_t *rev)
 
     rev->wet1 = wet * (rev->width / 2.0f + 0.5f);
     rev->wet2 = wet * ((1.0f - rev->width) / 2.0f);
+
+    for(int i = 0; i < NUM_OF_DELAY_SECTS; ++i)
+    {
+        int index = NUM_OF_AP_SECTS + i;
+        int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[index].length, rev->cached_sample_rate);
+        length *= LEX_DELAY_SCALE * fluid_concave(rev->roomsize * FLUID_VEL_CB_SIZE);
+        length++; // prevent zero length delay lines
+        FLUID_LOG(FLUID_DBG, "Lexverb delay line %d: length = %d samples", i, length);
+        rev->dl[i].set_buffer(length);
+    }
 }
 
 static void fluid_lexverb_process_sample(fluid_revmodel_lexverb_t *rev, float input,
@@ -107,14 +124,15 @@ fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
       wet2(0.0f),
       width(0.0f),
       damp_state_left(0.0f),
-      damp_state_right(0.0f)
+      damp_state_right(0.0f),
+      cached_sample_rate(sample_rate)
 {
     if(sample_rate <= 0.0f)
     {
         throw std::invalid_argument("Sample rate must be positive");
     }
 
-    fluid_lexverb_setup_blocks(this, sample_rate);
+    fluid_lexverb_setup_blocks(this);
 }
 
 fluid_revmodel_lexverb::~fluid_revmodel_lexverb() = default;

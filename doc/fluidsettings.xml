@@ -430,7 +430,7 @@ Developers:
             <max>1.0</max>
             <realtime/>
             <desc>
-                Sets the room size (i.e. amount of wet) reverb.</desc>
+                Sets the room size (i.e. amount and duration of wet) reverb.</desc>
         </setting>
         <setting>
             <name>reverb.width</name>
