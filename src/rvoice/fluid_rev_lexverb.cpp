@@ -68,7 +68,7 @@ static void fluid_lexverb_update(fluid_revmodel_lexverb_t *rev)
 }
 
 static void fluid_lexverb_process_sample(fluid_revmodel_lexverb_t *rev, float input,
-                                         float *out_left, float *out_right)
+                                         float *out_left, float *out_right, float *out_damp_state_left, float *out_damp_state_right)
 {
     fluid_reverb_allpass<float> *ap = rev->ap;
     fluid_reverb_delay_line<float> *dl = rev->dl;
@@ -91,12 +91,12 @@ static void fluid_lexverb_process_sample(fluid_revmodel_lexverb_t *rev, float in
     if(rev->damp > 0.0f)
     {
         float damp = (float)rev->damp;
-        *out_left = *out_left * (1.0f - damp) + rev->damp_state_left * damp;
-        *out_right = *out_right * (1.0f - damp) + rev->damp_state_right * damp;
+        *out_left = *out_left * (1.0f - damp) + *out_damp_state_left * damp;
+        *out_right = *out_right * (1.0f - damp) + *out_damp_state_right * damp;
     }
 
-    rev->damp_state_left = *out_left;
-    rev->damp_state_right = *out_right;
+    *out_damp_state_left = *out_left;
+    *out_damp_state_right = *out_right;
 }
 
 fluid_revmodel_lexverb::fluid_revmodel_lexverb(fluid_real_t sample_rate)
@@ -135,13 +135,15 @@ void fluid_revmodel_lexverb::process(const fluid_real_t *in, fluid_real_t *left_
                                      fluid_real_t *right_out)
 {
     int i;
+    auto damp_state_left = this->damp_state_left;
+    auto damp_state_right = this->damp_state_right;
 
     for(i = 0; i < FLUID_BUFSIZE; ++i)
     {
         float left = 0.0f;
         float right = 0.0f;
 
-        fluid_lexverb_process_sample(this, (float)in[i], &left, &right);
+        fluid_lexverb_process_sample(this, (float)in[i], &left, &right, &damp_state_left, &damp_state_right);
 
         fluid_real_t out_left = left * wet1 + right * wet2;
         fluid_real_t out_right = right * wet1 + left * wet2;
@@ -157,6 +159,9 @@ void fluid_revmodel_lexverb::process(const fluid_real_t *in, fluid_real_t *left_
             right_out[i] = out_right;
         }
     }
+
+    this->damp_state_left = damp_state_left;
+    this->damp_state_right = damp_state_right;
 }
 
 void fluid_revmodel_lexverb::reset()
