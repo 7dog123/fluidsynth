@@ -166,7 +166,8 @@ enum fluid_reverb_type
     FLUID_REVERB_TYPE_OFF = 0,       /**< Reverb disabled */
     FLUID_REVERB_TYPE_FDN = 1,       /**< FDN reverb engine */
     FLUID_REVERB_TYPE_FREEVERB = 2,  /**< Freeverb engine */
-    FLUID_REVERB_TYPE_LEXVERB = 3    /**< Lexicon LEXverb engine */
+    FLUID_REVERB_TYPE_LEXVERB = 3,   /**< Lexicon LEXverb engine */
+    FLUID_REVERB_TYPE_DATTORRO = 4   /**< Dattorro reverb engine */
 };
 
 FLUID_DEPRECATED FLUIDSYNTH_API void fluid_synth_set_reverb_on(fluid_synth_t *synth, int on);

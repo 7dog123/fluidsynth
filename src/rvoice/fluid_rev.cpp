@@ -24,6 +24,7 @@
 #include "fluid_rev_fdn.h"
 #include "fluid_rev_freeverb.h"
 #include "fluid_rev_lexverb.h"
+#include "fluid_rev_dattorro.h"
 
 #include <exception>
 #include <new>
@@ -42,6 +43,10 @@ new_fluid_revmodel(fluid_real_t sample_rate_max, fluid_real_t sample_rate, int r
         else if(reverb_type == FLUID_REVERB_TYPE_LEXVERB)
         {
             rev = new fluid_revmodel_lexverb(sample_rate);
+        }
+        else if(reverb_type == FLUID_REVERB_TYPE_DATTORRO)
+        {
+            rev = new fluid_revmodel_dattorro(sample_rate);
         }
         else
         {
