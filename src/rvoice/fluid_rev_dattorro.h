@@ -6,7 +6,7 @@
 #include "fluid_rev_filters.h"
 
 
-// A reverbator inspired by Jon Dattorro's plate reverb.
+// A reverbator based on Jon Dattorro's plate reverb.
 // https://ccrma.stanford.edu/~dattorro/EffectDesignPart1.pdf
 // pre = predelay
 // AP = allpass diffuser / allpass in tank
@@ -75,10 +75,14 @@ struct fluid_revmodel_dattorro : public _fluid_revmodel_t
     fluid_real_t cached_sample_rate;
 
     fluid_reverb_delay_line<float> predelay;
+    // input diffusions
     fluid_reverb_allpass<float> input_ap[4];
+    // 2 decay diffusions left + 2 decay diffusions right
     fluid_reverb_allpass<float> tank_ap[4];
+    // delay between the decay diffusions in each tank, with damping filters in the feedback path
     fluid_reverb_delay_line<float> tank_delay[4];
-    std::array<int, 14> taps;
+    // readout tap positions in the delay lines and allpass filters for producing the output, 7 per channel
+    std::array<int, 7*2> taps;
 
     explicit fluid_revmodel_dattorro(fluid_real_t sample_rate);
     ~fluid_revmodel_dattorro() override;

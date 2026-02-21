@@ -23,23 +23,58 @@
 
 namespace
 {
-constexpr float DATTORRO_TRIM = 0.6f;
+// fluidsynth's convenience wet scale factor
 constexpr float DATTORRO_SCALE_WET_WIDTH = 0.2f;
+// === Reverbation default parameters, table 1 ===
+// He trims all inputs by 0.6
+constexpr float DATTORRO_TRIM = 0.6f;
+// Decorrelates incoming signal
 constexpr float DATTORRO_INPUT_DIFFUSION1 = 0.75f;
 constexpr float DATTORRO_INPUT_DIFFUSION2 = 0.625f;
+// Controls density of tail
 constexpr float DATTORRO_DECAY_DIFFUSION1 = 0.7f;
+// Decorrelates tank signals
 constexpr float DATTORRO_DECAY_DIFFUSION2 = 0.5f;
-constexpr float DATTORRO_PREDELAY_MS = 4.0f;
-constexpr float DATTORRO_DELAY_S[] =
+// The length of the predelay doesn't seem to be specified in the paper?!
+constexpr float DATTORRO_PREDELAY_S = 4.0f / 1000.0f;
+ // base sample rate used by the Dattorro paper
+constexpr double DATTORRO_SAMPLE_RATE = 29761.0 /*Hz*/;
+
+// See delay times in seconds as shown in the flow chart of figure 1
+constexpr double DATTORRO_DELAY_S[] =
 {
-    0.004771345f, 0.003595309f, 0.012734787f, 0.009307483f,
-    0.022579886f, 0.149625349f, 0.060481839f, 0.1249958f,
-    0.030509727f, 0.141695508f, 0.089244313f, 0.106280031f
+    142 / DATTORRO_SAMPLE_RATE, 107 / DATTORRO_SAMPLE_RATE, // input diffusion 1
+    379 / DATTORRO_SAMPLE_RATE, 277 / DATTORRO_SAMPLE_RATE, // input diffusion 2
+    672 / DATTORRO_SAMPLE_RATE, // decay diffusion 1, left tank
+    4453 / DATTORRO_SAMPLE_RATE, // delay between decay diffusions in left tank
+    1800 / DATTORRO_SAMPLE_RATE, // decay diffusion 2, left tank
+    3720 / DATTORRO_SAMPLE_RATE, // delay between left decay diffusion 2 to right diffusion 1
+    908 / DATTORRO_SAMPLE_RATE, // decay diffusion 1, right tank
+    4217 / DATTORRO_SAMPLE_RATE, // delay between decay diffusions in right tank
+    2656 / DATTORRO_SAMPLE_RATE, // decay diffusion 2, right tank
+    3163 / DATTORRO_SAMPLE_RATE // delay between right decay diffusion 2 to left diffusion 1
 };
+
+// Output tap positions in seconds as shown in table 2
 constexpr float DATTORRO_TAP_S[] =
 {
-    0.008937872f, 0.099929438f, 0.064278754f, 0.067067639f, 0.066866033f, 0.006283391f, 0.035818689f,
-    0.011861161f, 0.121870905f, 0.041262054f, 0.08981553f, 0.070931756f, 0.011256342f, 0.004065724f
+    // left taps
+     266 / DATTORRO_SAMPLE_RATE,
+    2974 / DATTORRO_SAMPLE_RATE,
+    1913 / DATTORRO_SAMPLE_RATE,
+    1996 / DATTORRO_SAMPLE_RATE,
+    1990 / DATTORRO_SAMPLE_RATE,
+     187 / DATTORRO_SAMPLE_RATE,
+    1066 / DATTORRO_SAMPLE_RATE,
+
+    // right taps
+     353 / DATTORRO_SAMPLE_RATE,
+    3627 / DATTORRO_SAMPLE_RATE,
+    1228 / DATTORRO_SAMPLE_RATE,
+    2673 / DATTORRO_SAMPLE_RATE,
+    2111 / DATTORRO_SAMPLE_RATE,
+     335 / DATTORRO_SAMPLE_RATE,
+     121 / DATTORRO_SAMPLE_RATE
 };
 
 static int fluid_dattorro_seconds_to_samples(float seconds, fluid_real_t sample_rate)
@@ -106,7 +141,7 @@ fluid_revmodel_dattorro::~fluid_revmodel_dattorro() = default;
 
 void fluid_revmodel_dattorro::setup()
 {
-    predelay.set_buffer(fluid_dattorro_seconds_to_samples(DATTORRO_PREDELAY_MS / 1000.0f, cached_sample_rate));
+    predelay.set_buffer(fluid_dattorro_seconds_to_samples(DATTORRO_PREDELAY_S / 1000.0f, cached_sample_rate));
 
     for(int i = 0; i < 4; ++i)
     {
