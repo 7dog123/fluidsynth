@@ -45,7 +45,7 @@ constexpr float DATTORRO_TAP_S[] =
 static int fluid_dattorro_seconds_to_samples(float seconds, fluid_real_t sample_rate)
 {
     int length = static_cast<int>(seconds * sample_rate + 0.5f);
-    return length > 0 ? length : 1;
+    return std::max(length, 1); // prevent zero length delay lines
 }
 
 static float fluid_dattorro_read_tap(const fluid_reverb_delay_line<float> &delay, int tap)

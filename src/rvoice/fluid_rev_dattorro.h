@@ -5,6 +5,63 @@
 #include "fluid_rev.h"
 #include "fluid_rev_filters.h"
 
+
+// A reverbator inspired by Jon Dattorro's plate reverb.
+// https://ccrma.stanford.edu/~dattorro/EffectDesignPart1.pdf
+// pre = predelay
+// AP = allpass diffuser / allpass in tank
+// dly = delay line in tank
+// bw = bandwidth one-pole lowpass on input (before diffuser)
+// damp = damping one-pole lowpass in each tank loop
+// decay = feedback gain (roomsize-controlled)
+// taps = readout taps taken from various tank delay/AP buffers
+// wet_gain = wet output gain (wet1/wet2 width-mix happens after tap sum)
+// dry_gain = dry output gain (outside this unit in FluidSynth mixer)
+//
+// Note: This implementation is mono-in -> stereo-out (single input path).
+/*-------------------------------------------------------------------------------
+                                                                  (dry path mixed elsewhere)
+mono in>--->(*DATTORRO_TRIM*)--->(pre dly)---->(bw LP)---->--->---+--------------------\
+                                               ^                  |                     \
+                                               |                  |                      \
+                                          bw_state fb             |                       \
+                                                                 \|/
+                                                            -----   -----   -----   -----
+                                                            |AP0|-> |AP1|-> |AP2|-> |AP3|    (input diffuser)
+                                                            -----   -----   -----   -----
+                                                                      |
+                                                                     split
+                                                                      |
+                         +--------------------------------------------+--------------------------------------------+
+                         |                                                                                         |
+                         |                                                                                         |
+                         |                                   LEFT TANK PATH                                        |   RIGHT TANK PATH
+                         |                                                                                         |
+                         |   (cross feedback from opposite side)                                                   |   (cross feedback from opposite side)
+                         |     +-------------------------------+                                                   |     +-------------------------------+
+                         |     |                               |                                                   |     |                               |
+                         |     v                               |                                                   |     v                               |
+                         |  /---\                              |                                                   |  /---\                              |
+                         |  | + |<----- decay * last(tank_dly3)|                                                   |  | + |<----- decay * last(tank_dly1)|
+                         |  \---/                              |                                                   |  \---/                              |
+                         |     |                               |                                                   |     |                               |
+                         |    -----     -------     (damp LP)  |                                                   |    -----     -------     (damp LP)  |
+                         |    |AP4|--->|dly0|--->(damp_state_L)----->-----    -------                              |    |AP6|---> |dly2 |--->(damp_state_R)----->-----    ------
+                         |    -----     -------                |     |AP5|--->|dly1|--->(to cross fb: last dly1)   |    -----     -------                |       |AP7|--->|dly3|--->(to cross fb: last dly3)
+                         |                         ^           |     -----    -------                              |                         ^           |       -----    ------
+                         |                         |           |                                                   |                         |           |
+                         |                     decay * damp_L  |                                                   |                   decay * damp_R    |
+                         |                         |           |                                                   |                         |           |
+                         +-------------------------+-----------+                                                   +-------------------------+-----------+
+
+   TAP READOUTS (stereo decorrelated output is produced by different tap combinations)
+   --------------------------------------------------------------------------------
+   left tap sum  =  +tap(dly2,t0) +tap(dly2,t1) -tap(AP7,t2) +tap(dly3,t3) -tap(dly0,t4) -tap(AP5,t5) -tap(dly1,t6)
+   right tap sum =  +tap(dly0,t7) +tap(dly0,t8) -tap(AP5,t9) +tap(dly1,t10)-tap(dly2,t11)-tap(AP7,t12)-tap(dly3,t13)
+
+   left wet  = left_tap_sum  * wet1  + right_tap_sum * wet2  ---> left out
+   right wet = right_tap_sum * wet1  + left_tap_sum  * wet2  ---> right out
+---------------------------------------------------------------------------------*/
 struct fluid_revmodel_dattorro : public _fluid_revmodel_t
 {
     fluid_real_t roomsize;
