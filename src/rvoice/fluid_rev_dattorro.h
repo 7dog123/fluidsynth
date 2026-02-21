@@ -73,9 +73,6 @@ struct fluid_revmodel_dattorro : public _fluid_revmodel_t
     fluid_real_t bandwidth;
     fluid_real_t decay;
     fluid_real_t cached_sample_rate;
-    float bandwidth_state;
-    float damp_state_left;
-    float damp_state_right;
 
     fluid_reverb_delay_line<float> predelay;
     fluid_reverb_allpass<float> input_ap[4];
