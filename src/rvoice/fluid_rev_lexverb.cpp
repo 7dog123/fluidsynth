@@ -18,54 +18,11 @@
  * <https://www.gnu.org/licenses/>.
  */
 
-#include "fluid_rev.h"
 #include "fluid_sys.h"
-#include "fluid_rev_filters.h"
+#include "fluid_rev_lexverb.h"
 
-#include "LEXverb.h"
-
-#include <new>
-
-namespace
-{
 constexpr float LEX_TRIM = 0.7f;
 constexpr float LEX_SCALE_WET_WIDTH = 0.2f;
-}
-
-struct fluid_revmodel_lexverb : public _fluid_revmodel_t
-{
-    fluid_real_t roomsize;
-    fluid_real_t damp;
-    fluid_real_t level;
-    fluid_real_t wet1;
-    fluid_real_t wet2;
-    fluid_real_t width;
-    bool valid;
-    float damp_state_left;
-    float damp_state_right;
-
-    fluid_reverb_allpass<float> ap[NUM_OF_AP_SECTS];
-    fluid_reverb_delay_line<float> dl[NUM_OF_DELAY_SECTS];
-
-    explicit fluid_revmodel_lexverb(fluid_real_t sample_rate);
-    ~fluid_revmodel_lexverb() override;
-
-    bool is_valid() const
-    {
-        return valid;
-    }
-
-    void processmix(const fluid_real_t *in, fluid_real_t *left_out,
-                    fluid_real_t *right_out) override;
-    void processreplace(const fluid_real_t *in, fluid_real_t *left_out,
-                        fluid_real_t *right_out) override;
-    void reset() override;
-    void set(int set, fluid_real_t roomsize, fluid_real_t damping,
-             fluid_real_t width, fluid_real_t level) override;
-    int samplerate_change(fluid_real_t sample_rate) override;
-};
-
-typedef struct fluid_revmodel_lexverb fluid_revmodel_lexverb_t;
 
 static void fluid_lexverb_clear_blocks(fluid_revmodel_lexverb_t *rev)
 {
