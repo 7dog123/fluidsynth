@@ -65,8 +65,7 @@ static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev)
 
 static void fluid_lexverb_update(fluid_revmodel_lexverb_t *rev)
 {
-    fluid_real_t roomscale = 0.5f + 0.5f * rev->roomsize;
-    fluid_real_t wet = (rev->level * roomscale) /
+    fluid_real_t wet = (rev->level) /
                        (1.0f + rev->width * LEX_SCALE_WET_WIDTH);
 
     rev->wet1 = wet * (rev->width / 2.0f + 0.5f);
