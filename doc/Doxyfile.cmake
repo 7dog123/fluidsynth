@@ -87,6 +87,7 @@ INPUT = \
 @CMAKE_SOURCE_DIR@/doc/fluidsynth-v20-devdoc.txt \
 @CMAKE_SOURCE_DIR@/doc/recent_changes.txt \
 @CMAKE_SOURCE_DIR@/doc/usage \
+@CMAKE_SOURCE_DIR@/doc/reverbators.md \
 @CMAKE_SOURCE_DIR@/include \
 @CMAKE_SOURCE_DIR@/include/fluidsynth \
 @CMAKE_SOURCE_DIR@/src \
@@ -94,7 +95,7 @@ INPUT = \
 @CMAKE_BINARY_DIR@/doc/fluidsettings.txt
 
 INPUT_ENCODING = UTF-8
-FILE_PATTERNS = *.c *.h *.txt
+FILE_PATTERNS = *.c *.h *.txt *.md
 RECURSIVE = YES
 EXCLUDE = 
 EXCLUDE_SYMLINKS = NO
