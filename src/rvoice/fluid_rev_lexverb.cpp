@@ -20,11 +20,7 @@
 
 #include "fluid_rev.h"
 #include "fluid_sys.h"
-
-extern "C" {
-#include "allpass.h"
-#include "delay.h"
-}
+#include "fluid_rev_filters.h"
 
 #include "LEXverb.h"
 
@@ -48,8 +44,8 @@ struct fluid_revmodel_lexverb : public _fluid_revmodel_t
     float damp_state_left;
     float damp_state_right;
 
-    ap_info ap[NUM_OF_AP_SECTS];
-    dl_info dl[NUM_OF_DELAY_SECTS];
+    fluid_reverb_allpass<float> ap[NUM_OF_AP_SECTS];
+    fluid_reverb_delay_line<float> dl[NUM_OF_DELAY_SECTS];
 
     explicit fluid_revmodel_lexverb(fluid_real_t sample_rate);
     ~fluid_revmodel_lexverb() override;
@@ -77,14 +73,12 @@ static void fluid_lexverb_release_blocks(fluid_revmodel_lexverb_t *rev)
 
     for(i = 0; i < NUM_OF_AP_SECTS; ++i)
     {
-        FLUID_FREE(rev->ap[i].base);
-        rev->ap[i].base = NULL;
+        rev->ap[i].release();
     }
 
     for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
     {
-        FLUID_FREE(rev->dl[i].base);
-        rev->dl[i].base = NULL;
+        rev->dl[i].release();
     }
 }
 
@@ -94,24 +88,22 @@ static void fluid_lexverb_clear_blocks(fluid_revmodel_lexverb_t *rev)
 
     for(i = 0; i < NUM_OF_AP_SECTS; ++i)
     {
-        if(rev->ap[i].base != NULL)
+        if(rev->ap[i].has_buffer())
         {
-            FLUID_MEMSET(rev->ap[i].base, 0, sizeof(float) * rev->ap[i].length);
-            rev->ap[i].out_ptr = rev->ap[i].base + 1;
+            rev->ap[i].fill_buffer(0.0f);
+            rev->ap[i].set_index(1);
         }
-        rev->ap[i].in_data = 0.0f;
-        rev->ap[i].out_data = 0.0f;
+        rev->ap[i].set_last_output(0.0f);
     }
 
     for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
     {
-        if(rev->dl[i].base != NULL)
+        if(rev->dl[i].has_buffer())
         {
-            FLUID_MEMSET(rev->dl[i].base, 0, sizeof(float) * rev->dl[i].length);
-            rev->dl[i].out_ptr = rev->dl[i].base + 1;
+            rev->dl[i].fill_buffer(0.0f);
+            rev->dl[i].set_positions(1, 1);
         }
-        rev->dl[i].in_data = 0.0f;
-        rev->dl[i].out_data = 0.0f;
+        rev->dl[i].last_output = 0.0f;
     }
 
     rev->damp_state_left = 0.0f;
@@ -130,16 +122,14 @@ static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_
     {
         int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[i].length, sample_rate);
 
-        rev->ap[i].length = length;
-        rev->ap[i].coef = LEX_REVERB_PARMS[i].coef;
-        rev->ap[i].base = FLUID_ARRAY(float, length);
-        if(rev->ap[i].base == NULL)
+        rev->ap[i].set_mode(FLUID_REVERB_ALLPASS_SCHROEDER);
+        rev->ap[i].set_feedback(LEX_REVERB_PARMS[i].coef);
+        if(!rev->ap[i].set_buffer(length))
         {
             return FLUID_FAILED;
         }
-        rev->ap[i].out_ptr = rev->ap[i].base + 1;
-        rev->ap[i].in_data = 0.0f;
-        rev->ap[i].out_data = 0.0f;
+        rev->ap[i].set_index(1);
+        rev->ap[i].set_last_output(0.0f);
     }
 
     for(i = 0; i < NUM_OF_DELAY_SECTS; ++i)
@@ -147,16 +137,13 @@ static int fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev, fluid_real_
         int index = NUM_OF_AP_SECTS + i;
         int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[index].length, sample_rate);
 
-        rev->dl[i].length = length;
-        rev->dl[i].coef = LEX_REVERB_PARMS[index].coef;
-        rev->dl[i].base = FLUID_ARRAY(float, length);
-        if(rev->dl[i].base == NULL)
+        rev->dl[i].set_coefficient(LEX_REVERB_PARMS[index].coef);
+        if(!rev->dl[i].set_buffer(length))
         {
             return FLUID_FAILED;
         }
-        rev->dl[i].out_ptr = rev->dl[i].base + 1;
-        rev->dl[i].in_data = 0.0f;
-        rev->dl[i].out_data = 0.0f;
+        rev->dl[i].set_positions(1, 1);
+        rev->dl[i].last_output = 0.0f;
     }
 
     fluid_lexverb_clear_blocks(rev);
@@ -177,24 +164,23 @@ static void fluid_lexverb_update(fluid_revmodel_lexverb_t *rev)
 static void fluid_lexverb_process_sample(fluid_revmodel_lexverb_t *rev, float input,
                                          float *out_left, float *out_right)
 {
-    ap_info *ap = rev->ap;
-    dl_info *dl = rev->dl;
+    fluid_reverb_allpass<float> *ap = rev->ap;
+    fluid_reverb_delay_line<float> *dl = rev->dl;
+    float output;
 
-    ap[0].in_data = input * LEX_TRIM; // technically, the left input sample should be here
-    ap[1].in_data = all_pass_filter(&ap[0]);
-    dl[1].in_data = ap[9].out_data;
-    ap[2].in_data = all_pass_filter(&ap[1]) + delay(&dl[1]) * dl[1].coef;
-    ap[3].in_data = all_pass_filter(&ap[2]);
-    ap[4].in_data = all_pass_filter(&ap[3]);
-    *out_left = all_pass_filter(&ap[4]);
+    output = ap[0].process(input * LEX_TRIM); // technically, the left input sample should be here
+    output = ap[1].process(output);
+    output = ap[2].process(output + dl[1].process(ap[9].get_last_output()) * dl[1].get_coefficient());
+    output = ap[3].process(output);
+    output = ap[4].process(output);
+    *out_left = output;
 
-    ap[5].in_data = input * LEX_TRIM; // technically, the right input sample should be here
-    ap[6].in_data = all_pass_filter(&ap[5]);
-    dl[0].in_data = ap[4].out_data;
-    ap[7].in_data = all_pass_filter(&ap[6]) + delay(&dl[0]) * dl[0].coef;
-    ap[8].in_data = all_pass_filter(&ap[7]);
-    ap[9].in_data = all_pass_filter(&ap[8]);
-    *out_right = all_pass_filter(&ap[9]);
+    output = ap[5].process(input * LEX_TRIM); // technically, the right input sample should be here
+    output = ap[6].process(output);
+    output = ap[7].process(output + dl[0].process(ap[4].get_last_output()) * dl[0].get_coefficient());
+    output = ap[8].process(output);
+    output = ap[9].process(output);
+    *out_right = output;
 
     if(rev->damp > 0.0f)
     {

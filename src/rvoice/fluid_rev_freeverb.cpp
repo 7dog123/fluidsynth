@@ -11,6 +11,7 @@
 
 #include "fluid_sys.h"
 #include "fluid_rev.h"
+#include "fluid_rev_filters.h"
 
 #include <new>
 
@@ -38,155 +39,8 @@
  */
 #define DC_OFFSET ((fluid_real_t)1e-8)
 
-typedef struct _fluid_allpass fluid_allpass;
-typedef struct _fluid_comb fluid_comb;
-
-struct _fluid_allpass
-{
-    fluid_real_t feedback;
-    fluid_real_t *buffer;
-    int bufsize;
-    int bufidx;
-};
-
-void fluid_allpass_init(fluid_allpass *allpass);
-void fluid_allpass_setfeedback(fluid_allpass *allpass, fluid_real_t val);
-fluid_real_t fluid_allpass_getfeedback(fluid_allpass *allpass);
-
-void
-fluid_allpass_setbuffer(fluid_allpass *allpass, int size)
-{
-    allpass->bufidx = 0;
-    allpass->buffer = FLUID_ARRAY(fluid_real_t, size);
-    allpass->bufsize = size;
-}
-
-void
-fluid_allpass_release(fluid_allpass *allpass)
-{
-    FLUID_FREE(allpass->buffer);
-}
-
-void
-fluid_allpass_init(fluid_allpass *allpass)
-{
-    int i;
-    int len = allpass->bufsize;
-    fluid_real_t *buf = allpass->buffer;
-
-    for(i = 0; i < len; i++)
-    {
-        buf[i] = DC_OFFSET; /* this is not 100% correct. */
-    }
-}
-
-void
-fluid_allpass_setfeedback(fluid_allpass *allpass, fluid_real_t val)
-{
-    allpass->feedback = val;
-}
-
-fluid_real_t
-fluid_allpass_getfeedback(fluid_allpass *allpass)
-{
-    return allpass->feedback;
-}
-
-#define fluid_allpass_process(_allpass, _input) \
-{ \
-  fluid_real_t output; \
-  fluid_real_t bufout; \
-  bufout = _allpass.buffer[_allpass.bufidx]; \
-  output = bufout-_input; \
-  _allpass.buffer[_allpass.bufidx] = _input + (bufout * _allpass.feedback); \
-  if (++_allpass.bufidx >= _allpass.bufsize) { \
-    _allpass.bufidx = 0; \
-  } \
-  _input = output; \
-}
-
-struct _fluid_comb
-{
-    fluid_real_t feedback;
-    fluid_real_t filterstore;
-    fluid_real_t damp1;
-    fluid_real_t damp2;
-    fluid_real_t *buffer;
-    int bufsize;
-    int bufidx;
-};
-
-void fluid_comb_setbuffer(fluid_comb *comb, int size);
-void fluid_comb_release(fluid_comb *comb);
-void fluid_comb_init(fluid_comb *comb);
-void fluid_comb_setdamp(fluid_comb *comb, fluid_real_t val);
-fluid_real_t fluid_comb_getdamp(fluid_comb *comb);
-void fluid_comb_setfeedback(fluid_comb *comb, fluid_real_t val);
-fluid_real_t fluid_comb_getfeedback(fluid_comb *comb);
-
-void
-fluid_comb_setbuffer(fluid_comb *comb, int size)
-{
-    comb->filterstore = 0;
-    comb->bufidx = 0;
-    comb->buffer = FLUID_ARRAY(fluid_real_t, size);
-    comb->bufsize = size;
-}
-
-void
-fluid_comb_release(fluid_comb *comb)
-{
-    FLUID_FREE(comb->buffer);
-}
-
-void
-fluid_comb_init(fluid_comb *comb)
-{
-    int i;
-    fluid_real_t *buf = comb->buffer;
-    int len = comb->bufsize;
-
-    for(i = 0; i < len; i++)
-    {
-        buf[i] = DC_OFFSET; /* This is not 100% correct. */
-    }
-}
-
-void
-fluid_comb_setdamp(fluid_comb *comb, fluid_real_t val)
-{
-    comb->damp1 = val;
-    comb->damp2 = 1 - val;
-}
-
-fluid_real_t
-fluid_comb_getdamp(fluid_comb *comb)
-{
-    return comb->damp1;
-}
-
-void
-fluid_comb_setfeedback(fluid_comb *comb, fluid_real_t val)
-{
-    comb->feedback = val;
-}
-
-fluid_real_t
-fluid_comb_getfeedback(fluid_comb *comb)
-{
-    return comb->feedback;
-}
-
-#define fluid_comb_process(_comb, _input, _output) \
-{ \
-  fluid_real_t _tmp = _comb.buffer[_comb.bufidx]; \
-  _comb.filterstore = (_tmp * _comb.damp2) + (_comb.filterstore * _comb.damp1); \
-  _comb.buffer[_comb.bufidx] = _input + (_comb.filterstore * _comb.feedback); \
-  if (++_comb.bufidx >= _comb.bufsize) { \
-    _comb.bufidx = 0; \
-  } \
-  _output += _tmp; \
-}
+using fluid_allpass = fluid_reverb_allpass<fluid_real_t>;
+using fluid_comb = fluid_reverb_comb<fluid_real_t>;
 
 #define numcombs 8
 #define numallpasses 4
@@ -277,17 +131,18 @@ static void fluid_freeverb_set_revmodel_buffers(fluid_revmodel_freeverb_t *rev,
 
 fluid_revmodel_freeverb::fluid_revmodel_freeverb(fluid_real_t sample_rate)
 {
+    int i;
+
     fluid_freeverb_set_revmodel_buffers(this, sample_rate);
 
     /* Set default values */
-    fluid_allpass_setfeedback(&allpassL[0], 0.5f);
-    fluid_allpass_setfeedback(&allpassR[0], 0.5f);
-    fluid_allpass_setfeedback(&allpassL[1], 0.5f);
-    fluid_allpass_setfeedback(&allpassR[1], 0.5f);
-    fluid_allpass_setfeedback(&allpassL[2], 0.5f);
-    fluid_allpass_setfeedback(&allpassR[2], 0.5f);
-    fluid_allpass_setfeedback(&allpassL[3], 0.5f);
-    fluid_allpass_setfeedback(&allpassR[3], 0.5f);
+    for(i = 0; i < numallpasses; i++)
+    {
+        allpassL[i].set_mode(FLUID_REVERB_ALLPASS_FREEVERB);
+        allpassR[i].set_mode(FLUID_REVERB_ALLPASS_FREEVERB);
+        allpassL[i].set_feedback(0.5f);
+        allpassR[i].set_feedback(0.5f);
+    }
 
     gain = fixedgain;
 }
@@ -298,14 +153,14 @@ fluid_revmodel_freeverb::~fluid_revmodel_freeverb()
 
     for(i = 0; i < numcombs; i++)
     {
-        fluid_comb_release(&combL[i]);
-        fluid_comb_release(&combR[i]);
+        combL[i].release();
+        combR[i].release();
     }
 
     for(i = 0; i < numallpasses; i++)
     {
-        fluid_allpass_release(&allpassL[i]);
-        fluid_allpass_release(&allpassR[i]);
+        allpassL[i].release();
+        allpassR[i].release();
     }
 }
 
@@ -316,30 +171,30 @@ fluid_freeverb_set_revmodel_buffers(fluid_revmodel_freeverb_t *rev,
 
     float srfactor = sample_rate / 44100.0f;
 
-    fluid_comb_setbuffer(&rev->combL[0], combtuningL1 * srfactor);
-    fluid_comb_setbuffer(&rev->combR[0], combtuningR1 * srfactor);
-    fluid_comb_setbuffer(&rev->combL[1], combtuningL2 * srfactor);
-    fluid_comb_setbuffer(&rev->combR[1], combtuningR2 * srfactor);
-    fluid_comb_setbuffer(&rev->combL[2], combtuningL3 * srfactor);
-    fluid_comb_setbuffer(&rev->combR[2], combtuningR3 * srfactor);
-    fluid_comb_setbuffer(&rev->combL[3], combtuningL4 * srfactor);
-    fluid_comb_setbuffer(&rev->combR[3], combtuningR4 * srfactor);
-    fluid_comb_setbuffer(&rev->combL[4], combtuningL5 * srfactor);
-    fluid_comb_setbuffer(&rev->combR[4], combtuningR5 * srfactor);
-    fluid_comb_setbuffer(&rev->combL[5], combtuningL6 * srfactor);
-    fluid_comb_setbuffer(&rev->combR[5], combtuningR6 * srfactor);
-    fluid_comb_setbuffer(&rev->combL[6], combtuningL7 * srfactor);
-    fluid_comb_setbuffer(&rev->combR[6], combtuningR7 * srfactor);
-    fluid_comb_setbuffer(&rev->combL[7], combtuningL8 * srfactor);
-    fluid_comb_setbuffer(&rev->combR[7], combtuningR8 * srfactor);
-    fluid_allpass_setbuffer(&rev->allpassL[0], allpasstuningL1 * srfactor);
-    fluid_allpass_setbuffer(&rev->allpassR[0], allpasstuningR1 * srfactor);
-    fluid_allpass_setbuffer(&rev->allpassL[1], allpasstuningL2 * srfactor);
-    fluid_allpass_setbuffer(&rev->allpassR[1], allpasstuningR2 * srfactor);
-    fluid_allpass_setbuffer(&rev->allpassL[2], allpasstuningL3 * srfactor);
-    fluid_allpass_setbuffer(&rev->allpassR[2], allpasstuningR3 * srfactor);
-    fluid_allpass_setbuffer(&rev->allpassL[3], allpasstuningL4 * srfactor);
-    fluid_allpass_setbuffer(&rev->allpassR[3], allpasstuningR4 * srfactor);
+    rev->combL[0].set_buffer(combtuningL1 * srfactor);
+    rev->combR[0].set_buffer(combtuningR1 * srfactor);
+    rev->combL[1].set_buffer(combtuningL2 * srfactor);
+    rev->combR[1].set_buffer(combtuningR2 * srfactor);
+    rev->combL[2].set_buffer(combtuningL3 * srfactor);
+    rev->combR[2].set_buffer(combtuningR3 * srfactor);
+    rev->combL[3].set_buffer(combtuningL4 * srfactor);
+    rev->combR[3].set_buffer(combtuningR4 * srfactor);
+    rev->combL[4].set_buffer(combtuningL5 * srfactor);
+    rev->combR[4].set_buffer(combtuningR5 * srfactor);
+    rev->combL[5].set_buffer(combtuningL6 * srfactor);
+    rev->combR[5].set_buffer(combtuningR6 * srfactor);
+    rev->combL[6].set_buffer(combtuningL7 * srfactor);
+    rev->combR[6].set_buffer(combtuningR7 * srfactor);
+    rev->combL[7].set_buffer(combtuningL8 * srfactor);
+    rev->combR[7].set_buffer(combtuningR8 * srfactor);
+    rev->allpassL[0].set_buffer(allpasstuningL1 * srfactor);
+    rev->allpassR[0].set_buffer(allpasstuningR1 * srfactor);
+    rev->allpassL[1].set_buffer(allpasstuningL2 * srfactor);
+    rev->allpassR[1].set_buffer(allpasstuningR2 * srfactor);
+    rev->allpassL[2].set_buffer(allpasstuningL3 * srfactor);
+    rev->allpassR[2].set_buffer(allpasstuningR3 * srfactor);
+    rev->allpassL[3].set_buffer(allpasstuningL4 * srfactor);
+    rev->allpassR[3].set_buffer(allpasstuningR4 * srfactor);
 
     /* Clear all buffers */
     fluid_freeverb_revmodel_init(rev);
@@ -353,14 +208,14 @@ fluid_freeverb_revmodel_init(fluid_revmodel_freeverb_t *rev)
 
     for(i = 0; i < numcombs; i++)
     {
-        fluid_comb_init(&rev->combL[i]);
-        fluid_comb_init(&rev->combR[i]);
+        rev->combL[i].fill_buffer(DC_OFFSET);
+        rev->combR[i].fill_buffer(DC_OFFSET);
     }
 
     for(i = 0; i < numallpasses; i++)
     {
-        fluid_allpass_init(&rev->allpassL[i]);
-        fluid_allpass_init(&rev->allpassR[i]);
+        rev->allpassL[i].fill_buffer(DC_OFFSET);
+        rev->allpassR[i].fill_buffer(DC_OFFSET);
     }
 }
 
@@ -393,15 +248,15 @@ fluid_freeverb_revmodel_processreplace(fluid_revmodel_freeverb_t *rev,
         /* Accumulate comb filters in parallel */
         for(i = 0; i < numcombs; i++)
         {
-            fluid_comb_process(rev->combL[i], input, outL);
-            fluid_comb_process(rev->combR[i], input, outR);
+            outL += rev->combL[i].process(input);
+            outR += rev->combR[i].process(input);
         }
 
         /* Feed through allpasses in series */
         for(i = 0; i < numallpasses; i++)
         {
-            fluid_allpass_process(rev->allpassL[i], outL);
-            fluid_allpass_process(rev->allpassR[i], outR);
+            outL = rev->allpassL[i].process(outL);
+            outR = rev->allpassR[i].process(outR);
         }
 
         /* Remove the DC offset */
@@ -437,15 +292,15 @@ fluid_freeverb_revmodel_processmix(fluid_revmodel_freeverb_t *rev,
         /* Accumulate comb filters in parallel */
         for(i = 0; i < numcombs; i++)
         {
-            fluid_comb_process(rev->combL[i], input, outL);
-            fluid_comb_process(rev->combR[i], input, outR);
+            outL += rev->combL[i].process(input);
+            outR += rev->combR[i].process(input);
         }
 
         /* Feed through allpasses in series */
         for(i = 0; i < numallpasses; i++)
         {
-            fluid_allpass_process(rev->allpassL[i], outL);
-            fluid_allpass_process(rev->allpassR[i], outR);
+            outL = rev->allpassL[i].process(outL);
+            outR = rev->allpassR[i].process(outR);
         }
 
         /* Remove the DC offset */
@@ -481,14 +336,14 @@ fluid_freeverb_revmodel_update(fluid_revmodel_freeverb_t *rev)
 
     for(i = 0; i < numcombs; i++)
     {
-        fluid_comb_setfeedback(&rev->combL[i], rev->roomsize);
-        fluid_comb_setfeedback(&rev->combR[i], rev->roomsize);
+        rev->combL[i].set_feedback(rev->roomsize);
+        rev->combR[i].set_feedback(rev->roomsize);
     }
 
     for(i = 0; i < numcombs; i++)
     {
-        fluid_comb_setdamp(&rev->combL[i], rev->damp);
-        fluid_comb_setdamp(&rev->combR[i], rev->damp);
+        rev->combL[i].set_damp(rev->damp);
+        rev->combR[i].set_damp(rev->damp);
     }
 }
 
@@ -543,14 +398,14 @@ fluid_freeverb_revmodel_samplerate_change(fluid_revmodel_freeverb_t *rev,
 
     for(i = 0; i < numcombs; i++)
     {
-        fluid_comb_release(&rev->combL[i]);
-        fluid_comb_release(&rev->combR[i]);
+        rev->combL[i].release();
+        rev->combR[i].release();
     }
 
     for(i = 0; i < numallpasses; i++)
     {
-        fluid_allpass_release(&rev->allpassL[i]);
-        fluid_allpass_release(&rev->allpassR[i]);
+        rev->allpassL[i].release();
+        rev->allpassR[i].release();
     }
 
     fluid_freeverb_set_revmodel_buffers(rev, sample_rate);

@@ -168,6 +168,7 @@
  */
 #include "fluid_rev.h"
 #include "fluid_sys.h"
+#include "fluid_rev_filters.h"
 
 #include <new>
 
@@ -332,11 +333,7 @@ a flatter response on comb filter. So the input gain is set to 0.1 rather 1.0. *
 /*-----------------------------------------------------------------------------
  Delay absorbent low pass filter
 -----------------------------------------------------------------------------*/
-typedef struct
-{
-    fluid_real_t buffer;
-    fluid_real_t b0, a1;         /* filter coefficients */
-} fdn_delay_lpf;
+using fdn_delay_lpf = fluid_reverb_delay_damping<fluid_real_t>;
 
 /*-----------------------------------------------------------------------------
  Sets coefficients for delay absorbent low pass filter.
@@ -370,16 +367,7 @@ static void set_fdn_delay_lpf(fdn_delay_lpf *lpf,
  The delay line is composed of the line plus an absorbent low pass filter
  to get frequency dependent reverb time.
 -----------------------------------------------------------------------------*/
-typedef struct
-{
-    fluid_real_t *line; /* buffer line */
-    int   size;         /* effective internal size (in samples) */
-    /*-------------*/
-    int line_in;  /* line in position */
-    int line_out; /* line out position */
-    /*-------------*/
-    fdn_delay_lpf damping; /* damping low pass filter */
-} delay_line;
+using delay_line = fluid_reverb_delay_line<fluid_real_t, fdn_delay_lpf>;
 
 
 /*-----------------------------------------------------------------------------
