@@ -49,10 +49,10 @@ static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev)
     {
         int index = NUM_OF_AP_SECTS + i;
         int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[index].length, rev->cached_sample_rate);
-        FLUID_LOG(FLUID_DBG, "Lexverb delay line %d: default length = %d samples", i, length);
+        FLUID_LOG(FLUID_DBG, "LEXverb delay line %d: default length = %d samples", i, length);
         length *= LEX_DELAY_SCALE;
         length++; // prevent zero length delay lines
-        FLUID_LOG(FLUID_DBG, "Lexverb delay line %d: MAX length = %d samples", i, length);
+        FLUID_LOG(FLUID_DBG, "LEXverb delay line %d: MAX length = %d samples", i, length);
 
         rev->dl[i].set_coefficient(LEX_REVERB_PARMS[index].coef);
         rev->dl[i].set_buffer(length);
@@ -240,6 +240,6 @@ void fluid_revmodel_lexverb::set(int set, fluid_real_t roomsize, fluid_real_t da
 
 int fluid_revmodel_lexverb::samplerate_change(fluid_real_t sample_rate)
 {
-    FLUID_LOG(FLUID_ERR, "LEXverb reverb: sample rate change is not supported");
+    FLUID_LOG(FLUID_ERR, "LEXverb: sample rate change is not supported");
     return FLUID_FAILED;
 }

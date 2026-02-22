@@ -329,13 +329,6 @@ void fluid_revmodel_dattorro::set(int set, fluid_real_t roomsize, fluid_real_t d
 
 int fluid_revmodel_dattorro::samplerate_change(fluid_real_t sample_rate)
 {
-    if(sample_rate <= 0.0f)
-    {
-        return FLUID_FAILED;
-    }
-
-    cached_sample_rate = sample_rate;
-    setup();
-    update();
-    return FLUID_OK;
+    FLUID_LOG(FLUID_ERR, "Dattorro reverb: sample rate change is not supported");
+    return FLUID_FAILED;
 }
