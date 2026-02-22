@@ -379,6 +379,89 @@ else ( LIBINSTPATCH_SUPPORT OR ENABLE_NATIVE_DLS )
     )
 endif (LIBINSTPATCH_SUPPORT OR ENABLE_NATIVE_DLS )
 
+
+set(_reverb_type
+  "1"
+  "2"
+  "3"
+  "4"
+)
+
+set(_reverb_width
+  "0.0"
+  "1.0"
+  "10"
+)
+
+set(_reverb_damp
+  "0.0"
+  "0.3"
+  "0.7"
+  "1"
+)
+
+set(_reverb_level
+  "0.7"
+  "1"
+)
+
+set(_reverb_size
+  "0.3"
+  "0.7"
+  "1"
+)
+
+set(_render_commands)
+list(APPEND _render_commands
+     COMMAND fluidsynth -R 0 -C 0 -g 1.9
+        -F ${REVERB_RENDER_DIR}/reverb_water_triangle_test_dry.oga
+        reverb_water_triangle_test.mid ${DK64SF2}
+)
+list(APPEND _render_commands
+    COMMAND fluidsynth -R 0 -C 0 -g 0.4 -F ${REVERB_RENDER_DIR}/1496_dry.oga mrbumpys_rev_width_test.mid 1496.sf2
+)
+list(APPEND _render_commands
+    COMMAND fluidsynth -R 0 -C 0 -g 0.7 -F ${REVERB_RENDER_DIR}/1455_dry.oga mrbumpys_rev_width_test.mid ${GENERAL_USER_GS2}
+)
+foreach(_t IN LISTS _reverb_type)
+    list(APPEND _render_commands
+        COMMAND fluidsynth -R ${_t} -C 0 -g 0.4 -o synth.reverb.room-size=0.7 -o synth.reverb.width=1 -o synth.reverb.damp=0 -o synth.reverb.level=0.7 -F ${REVERB_RENDER_DIR}/1496_t${_t}.oga mrbumpys_rev_width_test.mid 1496.sf2
+    )
+    list(APPEND _render_commands
+        COMMAND fluidsynth -R ${_t} -C 0 -g 0.7 -o synth.reverb.room-size=0.7 -o synth.reverb.width=1 -o synth.reverb.damp=0 -o synth.reverb.level=0.7 -F ${REVERB_RENDER_DIR}/1455_t${_t}.oga mrbumpys_rev_width_test.mid ${GENERAL_USER_GS2}
+    )
+endforeach()
+
+foreach(_l IN LISTS _reverb_level)
+foreach(_s IN LISTS _reverb_size)
+foreach(_w IN LISTS _reverb_width)
+foreach(_d IN LISTS _reverb_damp)
+foreach(_t IN LISTS _reverb_type)
+  list(APPEND _render_commands
+    COMMAND fluidsynth -R ${_t} -C 0 -g 1.9
+            -o synth.reverb.room-size=${_s}
+            -o synth.reverb.width=${_w}
+            -o synth.reverb.damp=${_d}
+            -o synth.reverb.level=${_l}
+            -F ${REVERB_RENDER_DIR}/reverb_water_triangle_test_l${_l}_s${_s}_w${_w}_d${_d}_t${_t}.oga
+            reverb_water_triangle_test.mid ${DK64SF2}
+  )
+endforeach()
+endforeach()
+endforeach()
+endforeach()
+endforeach()
+
+add_custom_target(renderReverbOverview
+  ${_render_commands}
+  COMMENT "Reverb overview study"
+  DEPENDS fluidsynth create_iir_dir
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/manual/reverb/
+  VERBATIM
+)
+
+
+
 # Add a dependency so that rendering targets depends on check_manual
 add_dependencies(check_manual render1415)
 add_dependencies(check_manual render1417)
