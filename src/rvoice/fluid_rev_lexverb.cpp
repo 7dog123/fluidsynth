@@ -39,7 +39,6 @@ static void fluid_lexverb_setup_blocks(fluid_revmodel_lexverb_t *rev)
     {
         int length = fluid_lexverb_ms_to_buf_length(LEX_REVERB_PARMS[i].length, rev->cached_sample_rate);
 
-        rev->ap[i].set_mode(FLUID_REVERB_ALLPASS_SCHROEDER);
         rev->ap[i].set_feedback(LEX_REVERB_PARMS[i].coef);
         rev->ap[i].set_buffer(length);
         rev->ap[i].set_index(1);

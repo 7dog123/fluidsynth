@@ -76,9 +76,9 @@ struct fluid_revmodel_dattorro : public _fluid_revmodel_t
 
     fluid_reverb_delay_line<float> predelay;
     // input diffusions
-    fluid_reverb_allpass<float> input_ap[4];
+    fluid_reverb_allpass<float, FLUID_REVERB_ALLPASS_SCHROEDER> input_ap[4];
     // 2 decay diffusions left + 2 decay diffusions right
-    fluid_reverb_allpass<float> tank_ap[4];
+    fluid_reverb_allpass<float, FLUID_REVERB_ALLPASS_SCHROEDER> tank_ap[4];
     // delay between the decay diffusions in each tank, with damping filters in the feedback path
     fluid_reverb_delay_line<float> tank_delay[4];
     // readout tap positions in the delay lines and allpass filters for producing the output, 7 per channel

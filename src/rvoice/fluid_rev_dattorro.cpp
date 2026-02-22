@@ -145,7 +145,6 @@ void fluid_revmodel_dattorro::setup()
 
     for(int i = 0; i < 4; ++i)
     {
-        input_ap[i].set_mode(FLUID_REVERB_ALLPASS_SCHROEDER);
         input_ap[i].set_buffer(fluid_dattorro_seconds_to_samples(DATTORRO_DELAY_S[i], cached_sample_rate));
     }
     input_ap[0].set_feedback(DATTORRO_INPUT_DIFFUSION1);
@@ -155,7 +154,6 @@ void fluid_revmodel_dattorro::setup()
 
     for(int i = 0; i < 4; ++i)
     {
-        tank_ap[i].set_mode(FLUID_REVERB_ALLPASS_SCHROEDER);
         tank_ap[i].set_buffer(fluid_dattorro_seconds_to_samples(DATTORRO_DELAY_S[4 + i * 2], cached_sample_rate));
         tank_delay[i].set_buffer(fluid_dattorro_seconds_to_samples(DATTORRO_DELAY_S[5 + i * 2], cached_sample_rate));
     }

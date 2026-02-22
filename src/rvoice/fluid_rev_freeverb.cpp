@@ -95,8 +95,6 @@ fluid_revmodel_freeverb::fluid_revmodel_freeverb(fluid_real_t sample_rate)
     /* Set default values */
     for(i = 0; i < numallpasses; i++)
     {
-        allpassL[i].set_mode(FLUID_REVERB_ALLPASS_FREEVERB);
-        allpassR[i].set_mode(FLUID_REVERB_ALLPASS_FREEVERB);
         allpassL[i].set_feedback(0.5f);
         allpassR[i].set_feedback(0.5f);
     }

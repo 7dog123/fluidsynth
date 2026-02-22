@@ -68,7 +68,7 @@ struct fluid_revmodel_lexverb : public _fluid_revmodel_t
     float damp_state_right;
     fluid_real_t cached_sample_rate;
 
-    fluid_reverb_allpass<float> ap[NUM_OF_AP_SECTS];
+    fluid_reverb_allpass<float, FLUID_REVERB_ALLPASS_SCHROEDER> ap[NUM_OF_AP_SECTS];
     fluid_reverb_delay_line<float> dl[NUM_OF_DELAY_SECTS];
 
     explicit fluid_revmodel_lexverb(fluid_real_t sample_rate);

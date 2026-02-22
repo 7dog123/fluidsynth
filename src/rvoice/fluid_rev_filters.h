@@ -203,16 +203,10 @@ public:
  *
  * @tparam sample_t Floating point sample type (float or double).
  */
-template<typename sample_t>
+template<typename sample_t, enum fluid_reverb_allpass_mode mode = FLUID_REVERB_ALLPASS_SCHROEDER>
 class fluid_reverb_allpass
 {
 public:
-    /** Set which algorithm variant to use when processing samples. */
-    void set_mode(fluid_reverb_allpass_mode mode_in)
-    {
-        mode = mode_in;
-    }
-
     /** Set the feedback coefficient controlling the allpass response. */
     void set_feedback(sample_t value)
     {
@@ -290,8 +284,6 @@ public:
         return output;
     }
 
-    /** Algorithm variant selector. */
-    fluid_reverb_allpass_mode mode;
     /** Feedback coefficient (g) for the allpass filter. */
     sample_t feedback;
     /** Shared delay buffer storage for the filter. */
