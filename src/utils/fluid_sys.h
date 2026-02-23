@@ -302,6 +302,7 @@ typedef int (*fluid_server_func_t)(void *data, fluid_socket_t client_socket, cha
 fluid_server_socket_t *new_fluid_server_socket(int port, fluid_server_func_t func, void *data);
 void delete_fluid_server_socket(fluid_server_socket_t *sock);
 int fluid_server_socket_join(fluid_server_socket_t *sock);
+int fluid_server_socket_get_port(fluid_server_socket_t *sock);
 void fluid_socket_close(fluid_socket_t sock);
 fluid_istream_t fluid_socket_get_istream(fluid_socket_t sock);
 fluid_ostream_t fluid_socket_get_ostream(fluid_socket_t sock);
